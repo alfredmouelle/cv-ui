@@ -1,0 +1,6 @@
+allowBuilds:
+  esbuild: true
+  sharp: true
+  lightningcss: true
+  protobufjs: true
+  '@sentry/cli': true
