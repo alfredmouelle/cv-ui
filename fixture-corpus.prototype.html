@@ -1,0 +1,977 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>CV UI V1 fixture corpus prototype</title>
+    <style>
+    :root {
+      color: #17202a;
+      background: #edf1f5;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+    }
+    button {
+      font: inherit;
+    }
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 32px auto 64px;
+    }
+    header {
+      margin-bottom: 24px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 5vw, 48px);
+      letter-spacing: -0.04em;
+    }
+    h2 {
+      margin: 0 0 12px;
+      font-size: 19px;
+    }
+    h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+    p {
+      margin: 0;
+      line-height: 1.55;
+    }
+    code,
+    pre {
+      font-family: "SFMono-Regular", Consolas, monospace;
+    }
+    .eyebrow {
+      color: #155eef;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .lede {
+      max-width: 780px;
+      color: #52606d;
+    }
+    .notice {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-left: 4px solid #ffcc4d;
+      background: #fff9df;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 310px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .panel {
+      border: 1px solid #d7dee7;
+      border-radius: 12px;
+      background: white;
+      box-shadow: 0 10px 24px rgb(23 32 42 / 6%);
+    }
+    .sidebar {
+      position: sticky;
+      top: 16px;
+      padding: 14px;
+    }
+    .group + .group {
+      margin-top: 18px;
+    }
+    .case-list {
+      display: grid;
+      gap: 6px;
+    }
+    .case-button {
+      width: 100%;
+      border: 0;
+      border-radius: 7px;
+      padding: 9px 10px;
+      background: transparent;
+      color: #344054;
+      text-align: left;
+      cursor: pointer;
+    }
+    .case-button:hover {
+      background: #f3f6f9;
+    }
+    .case-button[aria-pressed="true"] {
+      background: #155eef;
+      color: white;
+    }
+    .content {
+      display: grid;
+      gap: 18px;
+    }
+    .state {
+      padding: 20px;
+    }
+    .state-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .metric {
+      padding: 12px;
+      border-radius: 8px;
+      background: #f3f6f9;
+    }
+    .metric span {
+      display: block;
+      color: #667085;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .metric strong {
+      display: block;
+      margin-top: 4px;
+      overflow-wrap: anywhere;
+    }
+    .detail {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 0.55fr);
+      gap: 18px;
+    }
+    .card {
+      padding: 18px;
+    }
+    pre {
+      max-height: 560px;
+      margin: 0;
+      padding: 14px;
+      overflow: auto;
+      border-radius: 8px;
+      background: #101828;
+      color: #e4e7ec;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th,
+    td {
+      padding: 9px 8px;
+      border-bottom: 1px solid #e4e7ec;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      color: #667085;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .yes {
+      color: #067647;
+      font-weight: 750;
+    }
+    .no {
+      color: #b42318;
+      font-weight: 750;
+    }
+    .walkthroughs {
+      padding: 18px;
+    }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .tab {
+      border: 1px solid #b9c3d0;
+      border-radius: 999px;
+      padding: 7px 12px;
+      background: white;
+      cursor: pointer;
+    }
+    .tab[aria-selected="true"] {
+      border-color: #155eef;
+      background: #eaf0ff;
+      color: #0d3ea7;
+    }
+    .steps {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .step {
+      border: 0;
+      border-radius: 7px;
+      padding: 9px 12px;
+      background: #17202a;
+      color: white;
+      cursor: pointer;
+    }
+    .step:disabled {
+      background: #d0d5dd;
+      color: #667085;
+      cursor: default;
+    }
+    .patterns {
+      columns: 2;
+      margin: 0;
+      padding-left: 18px;
+      color: #475467;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 860px) {
+      .layout,
+      .detail {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        position: static;
+      }
+      .state-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .patterns {
+        columns: 1;
+      }
+    }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">Throwaway logic prototype</p>
+        <h1>Canonical V1 fixture corpus</h1>
+        <p class="lede">
+          Question: does a small set of base CV documents plus named mutation cases specify every
+          accepted boundary, every one-over rejection, and the six proof-template baselines without
+          duplicating large JSON files?
+        </p>
+        <p class="notice">
+          This file is review evidence. It is not a production fixture generator or validator.
+        </p>
+      </header>
+
+      <div class="layout">
+        <aside class="panel sidebar">
+          <div class="group">
+            <h2>Base documents</h2>
+            <div class="case-list" id="base-cases"></div>
+          </div>
+          <div class="group">
+            <h2>Mutation suites</h2>
+            <div class="case-list" id="mutation-cases"></div>
+          </div>
+        </aside>
+
+        <section class="content">
+          <section class="panel state">
+            <p class="eyebrow">Current state</p>
+            <h2 id="case-title">minimum-valid</h2>
+            <p class="lede" id="case-purpose"></p>
+            <div class="state-grid">
+              <div class="metric"><span>Kind</span><strong id="case-kind"></strong></div>
+              <div class="metric"><span>Cases</span><strong id="case-count"></strong></div>
+              <div class="metric">
+                <span>Validation</span><strong id="case-validation"></strong>
+              </div>
+              <div class="metric"><span>Render output</span><strong id="case-render"></strong></div>
+            </div>
+          </section>
+
+          <div class="detail">
+            <section class="panel card">
+              <h2>Exact proposal</h2>
+              <pre id="case-data"></pre>
+            </section>
+            <section class="panel card">
+              <h2>Expected checks</h2>
+              <table>
+                <tbody id="expected-checks"></tbody>
+              </table>
+            </section>
+          </div>
+
+          <section class="panel card">
+            <h2>Boundary path families</h2>
+            <p class="lede">
+              Each path family expands into one accepted case at the limit and one rejected case at
+              limit plus one. Repeated record types use their own path.
+            </p>
+            <ul class="patterns" id="path-patterns"></ul>
+          </section>
+
+          <section class="panel card">
+            <h2>Proof-template output matrix</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Document</th>
+                  <th>Clearline</th>
+                  <th>Signal Ledger</th>
+                  <th>Committed output</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>minimum-valid</td>
+                  <td class="yes">Structural render</td>
+                  <td class="yes">Structural render</td>
+                  <td>No raster baseline</td>
+                </tr>
+                <tr>
+                  <td>canonical-en</td>
+                  <td class="yes">PDF and PNG</td>
+                  <td class="yes">PDF and PNG</td>
+                  <td>2 PDFs, ordered page PNGs</td>
+                </tr>
+                <tr>
+                  <td>canonical-fr</td>
+                  <td class="yes">PDF and PNG</td>
+                  <td class="yes">PDF and PNG</td>
+                  <td>2 PDFs, ordered page PNGs</td>
+                </tr>
+                <tr>
+                  <td>maximum-envelope</td>
+                  <td class="yes">PDF and PNG</td>
+                  <td class="yes">PDF and PNG</td>
+                  <td>2 PDFs, two page PNGs each</td>
+                </tr>
+                <tr>
+                  <td>Each accepted boundary</td>
+                  <td class="yes">Structural render</td>
+                  <td class="yes">Structural render</td>
+                  <td>No raster baseline</td>
+                </tr>
+                <tr>
+                  <td>wrapping-limit</td>
+                  <td class="yes">Structural render</td>
+                  <td class="yes">Structural render</td>
+                  <td>No raster baseline</td>
+                </tr>
+                <tr>
+                  <td>Each invalid mutation</td>
+                  <td class="no">No component call</td>
+                  <td class="no">No component call</td>
+                  <td>No DOM, PDF, or PNG</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="panel walkthroughs">
+            <h2>Guided walkthroughs</h2>
+            <div class="tabs" id="walkthrough-tabs" role="tablist"></div>
+            <p class="lede" id="walkthrough-copy"></p>
+            <div class="steps" id="walkthrough-steps"></div>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <script>
+    const canonicalEnglish = {
+      schemaVersion: '1',
+      language: 'en',
+      person: {
+        name: "Camille N'Diaye",
+        headline: 'Product engineer for public-interest services',
+        email: 'camille.ndiaye@example.com',
+        phone: '+33 6 12 34 56 78',
+        location: 'Paris, France',
+        links: [
+          { label: 'Portfolio', url: 'https://example.com/camille' },
+          { label: 'Code profile', url: 'https://example.com/camille/code' },
+        ],
+      },
+      summary:
+        'Product engineer who builds accessible services for multilingual communities and turns policy constraints into reliable software.',
+      work: [
+        {
+          organization: 'Civic Works Cooperative',
+          position: 'Senior product engineer',
+          positionReference: {
+            vocabulary: 'ESCO',
+            uri: 'https://data.europa.eu/esco/occupation/example',
+            version: '1.2',
+          },
+          location: 'Paris, France',
+          url: 'https://example.com/civic-works',
+          dateRange: { start: '2021-03', end: '2025-06' },
+          summary: 'Led delivery of case-management services used by municipal support teams.',
+          highlights: ['Cut application processing time by 38% without removing manual review.'],
+        },
+      ],
+      education: [
+        {
+          institution: 'University of Lyon',
+          qualification: 'Master of Science',
+          qualificationReference: {
+            vocabulary: 'ISCED',
+            uri: 'https://example.com/isced/7',
+            version: '2011',
+          },
+          field: 'Human-computer interaction',
+          location: 'Lyon, France',
+          url: 'https://example.com/university-lyon',
+          dateRange: { start: '2015', end: '2017' },
+          score: 'Distinction',
+          highlights: ['Researched form completion across French and English public services.'],
+        },
+      ],
+      projects: [
+        {
+          name: 'Plain Forms',
+          role: 'Maintainer',
+          url: 'https://example.com/plain-forms',
+          dateRange: { start: '2023-09' },
+          summary:
+            'Open form patterns for services that must work with keyboards and screen readers.',
+          highlights: ['Published tested patterns in two languages.'],
+        },
+      ],
+      skills: [
+        {
+          name: 'Accessible product engineering',
+          skillReference: { vocabulary: 'ESCO', uri: 'https://example.com/skills/accessibility' },
+          level: 'Advanced',
+          keywords: ['React', 'TypeScript', 'Design systems'],
+        },
+      ],
+      languages: [
+        { name: 'English', code: 'en', fluency: 'Professional' },
+        { name: 'French', code: 'fr', fluency: 'Native' },
+      ],
+      certifications: [
+        {
+          name: 'Web Accessibility Specialist',
+          issuer: 'Accessibility Guild',
+          date: '2022-05-12',
+          expires: '2026-05-12',
+          credentialId: 'WAS-2048',
+          url: 'https://example.com/credentials/was-2048',
+        },
+      ],
+      awards: [
+        {
+          title: 'Public Service Software Prize',
+          issuer: 'Digital Commons Forum',
+          date: '2024',
+          summary: 'Recognized a multilingual intake service built with community reviewers.',
+        },
+      ],
+      volunteer: [
+        {
+          organization: 'Code Neighbours',
+          role: 'Workshop mentor',
+          location: 'Saint-Denis, France',
+          url: 'https://example.com/code-neighbours',
+          dateRange: { start: '2020-01' },
+          summary: 'Runs monthly web workshops for career changers.',
+          highlights: ['Prepared accessible exercises used by twelve volunteer mentors.'],
+        },
+      ],
+      publications: [
+        {
+          name: 'Designing forms across language boundaries',
+          authors: ["Camille N'Diaye", 'Amina Diallo'],
+          publisher: 'Public Digital Review',
+          date: '2024-11-08',
+          url: 'https://example.com/publications/language-boundaries',
+          summary:
+            'A field report on translated labels, validation messages, and assisted completion.',
+        },
+      ],
+      extensions: { 'com.example.cv-ui': { source: 'canonical', reviewed: true } },
+    }
+
+    const canonicalFrench = {
+      ...canonicalEnglish,
+      language: 'fr',
+      person: {
+        ...canonicalEnglish.person,
+        headline: "Ingénieure produit pour les services d'intérêt public",
+        location: 'Paris, France',
+        links: [
+          { label: 'Portfolio', url: 'https://example.com/camille' },
+          { label: 'Profil de code', url: 'https://example.com/camille/code' },
+        ],
+      },
+      summary:
+        'Ingénieure produit qui conçoit des services accessibles pour des communautés multilingues et transforme les contraintes publiques en logiciels fiables.',
+      work: [
+        {
+          ...canonicalEnglish.work[0],
+          position: 'Ingénieure produit senior',
+          summary:
+            'Pilotage de services de gestion de dossiers utilisés par des équipes municipales.',
+          highlights: [
+            'Réduction de 38 % du délai de traitement sans supprimer la vérification humaine.',
+          ],
+        },
+      ],
+      education: [
+        {
+          ...canonicalEnglish.education[0],
+          qualification: 'Master sciences et technologies',
+          field: 'Interaction humain-machine',
+          score: 'Mention très bien',
+          highlights: [
+            'Recherche sur les formulaires des services publics en français et en anglais.',
+          ],
+        },
+      ],
+      projects: [
+        {
+          ...canonicalEnglish.projects[0],
+          name: 'Formulaires clairs',
+          role: 'Mainteneuse',
+          summary: "Modèles de formulaires ouverts pour le clavier et les lecteurs d'écran.",
+          highlights: ['Publication de modèles testés dans deux langues.'],
+        },
+      ],
+      skills: [
+        {
+          ...canonicalEnglish.skills[0],
+          name: 'Ingénierie produit accessible',
+          level: 'Avancé',
+          keywords: ['React', 'TypeScript', 'Systèmes de conception'],
+        },
+      ],
+      languages: [
+        { name: 'Anglais', code: 'en', fluency: 'Professionnel' },
+        { name: 'Français', code: 'fr', fluency: 'Langue maternelle' },
+      ],
+      awards: [
+        {
+          ...canonicalEnglish.awards[0],
+          title: 'Prix du logiciel de service public',
+          summary: 'Récompense pour un service multilingue conçu avec des évaluateurs locaux.',
+        },
+      ],
+      volunteer: [
+        {
+          ...canonicalEnglish.volunteer[0],
+          role: "Mentore d'atelier",
+          summary: 'Anime chaque mois des ateliers web pour des personnes en reconversion.',
+          highlights: ["Création d'exercices accessibles utilisés par douze mentors bénévoles."],
+        },
+      ],
+      publications: [
+        {
+          ...canonicalEnglish.publications[0],
+          name: 'Concevoir des formulaires au-delà des frontières linguistiques',
+          summary:
+            "Étude des libellés traduits, des messages de validation et de l'accompagnement.",
+        },
+      ],
+    }
+
+    const pathFamilies = {
+      compact40: [
+        'education[].score',
+        'skills[].level',
+        'skills[].keywords[]',
+        'languages[].fluency',
+      ],
+      label80: [
+        'person.email',
+        'person.phone',
+        'person.location',
+        'person.links[].label',
+        'work[].location',
+        'education[].location',
+        'volunteer[].location',
+        'certifications[].credentialId',
+      ],
+      nameOrTitle120: [
+        'person.name',
+        'person.headline',
+        'work[].organization',
+        'work[].position',
+        'education[].institution',
+        'education[].qualification',
+        'education[].field',
+        'projects[].name',
+        'projects[].role',
+        'skills[].name',
+        'languages[].name',
+        'certifications[].name',
+        'certifications[].issuer',
+        'awards[].title',
+        'awards[].issuer',
+        'volunteer[].organization',
+        'volunteer[].role',
+        'publications[].name',
+        'publications[].publisher',
+        'publications[].authors[]',
+      ],
+      highlight180: [
+        'work[].highlights[]',
+        'education[].highlights[]',
+        'projects[].highlights[]',
+        'volunteer[].highlights[]',
+      ],
+      entrySummary320: [
+        'work[].summary',
+        'projects[].summary',
+        'awards[].summary',
+        'volunteer[].summary',
+        'publications[].summary',
+      ],
+      profileSummary600: ['summary'],
+    }
+
+    const collectionCases = [
+      ['person.links', 5],
+      ['work', 4],
+      ['education', 4],
+      ['projects', 4],
+      ['certifications', 4],
+      ['awards', 4],
+      ['volunteer', 4],
+      ['publications', 4],
+      ['skills', 8],
+      ['skills[].keywords', 8],
+      ['languages', 6],
+      ['publications[].authors', 10],
+      ['work[].highlights', 5],
+      ['education[].highlights', 5],
+      ['projects[].highlights', 5],
+      ['volunteer[].highlights', 5],
+    ]
+
+    const bases = [
+      {
+        id: 'minimum',
+        title: 'minimum-valid',
+        kind: 'Base JSON',
+        purpose: 'The smallest valid document. All renderers must produce one complete A4 page.',
+        count: 1,
+        validation: 'CV Data and Fidelity pass',
+        render: 'Structural only',
+        data: { schemaVersion: '1', language: 'en', person: { name: 'A' } },
+        checks: [
+          ['Object identity', 'Validator returns this input reference'],
+          ['Visible authored values', 'A appears once'],
+          ['Pages', 'Exactly 1 A4 page'],
+        ],
+      },
+      {
+        id: 'english',
+        title: 'canonical-en',
+        kind: 'Base JSON',
+        purpose:
+          'Every core field and section in English, including semantic references and an opaque extension.',
+        count: 1,
+        validation: 'CV Data and Fidelity pass',
+        render: 'PDF and PNG baseline',
+        data: canonicalEnglish,
+        checks: [
+          ['Coverage', 'Every field and section'],
+          ['Generated labels', 'English exact strings'],
+          ['Dates', 'Year, month, day, and current range'],
+          ['Templates', 'Clearline and Signal Ledger'],
+        ],
+      },
+      {
+        id: 'french',
+        title: 'canonical-fr',
+        kind: 'Base JSON',
+        purpose: 'The same fictional CV with equivalent French content and Unicode stress.',
+        count: 1,
+        validation: 'CV Data and Fidelity pass',
+        render: 'PDF and PNG baseline',
+        data: canonicalFrench,
+        checks: [
+          ['Coverage', 'Same fields as canonical-en'],
+          ['Generated labels', 'French exact strings'],
+          ['Unicode', 'Accents, apostrophes, and French spacing'],
+          ['Templates', 'Clearline and Signal Ledger'],
+        ],
+      },
+      {
+        id: 'maximum',
+        title: 'maximum-envelope',
+        kind: 'Base plus deterministic filler',
+        purpose:
+          'One valid document at all three document totals. It has 14 records, 24 highlights, and exactly 5,000 authored grapheme clusters.',
+        count: 1,
+        validation: 'CV Data and Fidelity pass',
+        render: 'PDF and PNG baseline',
+        data: {
+          base: 'canonical-en',
+          operations: [
+            'Set repeated-section distribution to work 4, education 2, projects 2, skills 2, languages 1, certifications 1, awards 1, volunteer 1, publications 0.',
+            'Distribute 24 highlights as 5, 5, 5, 5, and 4 across the first five highlight-capable records.',
+            'Fill mapped strings with breakable ASCII text until authoredText is exactly 5,000.',
+            'Keep every field and collection at or below its local limit.',
+          ],
+        },
+        checks: [
+          ['record-count', '14 of 14'],
+          ['highlight-count', '24 of 24'],
+          ['authored-text', '5,000 of 5,000'],
+          ['Pages', 'Exactly 2 for both templates'],
+        ],
+      },
+      {
+        id: 'wrapping',
+        title: 'wrapping-limit',
+        kind: 'Base JSON',
+        purpose:
+          'A valid document that forces narrow-column wrapping while its largest unbroken segment is exactly 40 grapheme clusters.',
+        count: 1,
+        validation: 'CV Data and Fidelity pass',
+        render: 'Structural only',
+        data: {
+          schemaVersion: '1',
+          language: 'fr',
+          person: {
+            name: "Camille N'Diaye",
+            headline: 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
+            email: 'camille.ndiaye@example.com',
+            phone: '+237 699 88 77 66',
+            location: 'Nkolbisson, arrondissement de Yaoundé VII, Cameroun',
+            links: [
+              {
+                label: 'Documentation professionnelle accessible',
+                url: 'https://example.com/camille',
+              },
+            ],
+          },
+          summary:
+            'Une phrase avec plusieurs occasions de retour à la ligne doit rester lisible dans la colonne étroite sans réduction du corps du texte.',
+          work: [
+            {
+              organization: 'Coopérative des services publics numériques',
+              position: 'Ingénieure produit et accessibilité',
+              dateRange: { start: '2021-03' },
+              summary:
+                "Ce contenu vérifie les retours à la ligne autorisés et la conservation de l'ordre de lecture.",
+              highlights: ['UnSegmentSansCoupureDeQuaranteSignes1234'],
+            },
+          ],
+        },
+        checks: [
+          ['unbroken-text', 'Largest segment is 40'],
+          ['Clipping', 'None'],
+          ['Text size', 'No reduction'],
+          ['Columns', 'Signal Ledger narrow column stays readable'],
+        ],
+      },
+    ]
+
+    const mutations = [
+      {
+        id: 'boundaries',
+        title: 'accepted-boundaries',
+        kind: 'Mutation manifest',
+        purpose:
+          'One case for every concrete field path and collection path at its accepted limit.',
+        count: Object.values(pathFamilies).flat().length + collectionCases.length + 3,
+        validation: 'All pass',
+        render: 'Structural only',
+        data: {
+          baseSelection: 'smallest valid shape for the target path',
+          stringOperation: 'set target to breakableAscii(limit)',
+          collectionOperation: 'set target length to limit',
+          documentTotals: { records: 14, highlights: 24, authoredText: 5000 },
+        },
+        checks: [
+          ['Text cases', `${Object.values(pathFamilies).flat().length} concrete paths`],
+          ['Collection cases', `${collectionCases.length} concrete paths`],
+          ['Document totals', '3 cases'],
+          ['Isolation', 'Only the target reaches its limit'],
+        ],
+      },
+      {
+        id: 'invalid',
+        title: 'invalid-one-over',
+        kind: 'Mutation manifest',
+        purpose:
+          'Mirror every accepted boundary at limit plus one. Each case has one expected Fidelity error and produces no renderer output.',
+        count: Object.values(pathFamilies).flat().length + collectionCases.length + 3,
+        validation: 'All fail with exact errors',
+        render: 'Forbidden',
+        data: {
+          baseSelection: 'matching accepted boundary case',
+          mutation: 'increase the target by one grapheme or one array item',
+          expected: {
+            path: 'target JSON Pointer',
+            code: 'mapped Fidelity code',
+            limit: 'declared limit',
+            actual: 'limit + 1',
+          },
+        },
+        checks: [
+          ['Error count', 'Exactly 1 per isolated case'],
+          ['Error fields', 'Exact path, code, limit, actual'],
+          ['Component calls', '0'],
+          ['Artifacts', 'No DOM, PDF, or PNG'],
+        ],
+      },
+      {
+        id: 'aggregate',
+        title: 'invalid-error-order',
+        kind: 'Mutation manifest',
+        purpose:
+          'One deliberately invalid document verifies complete deterministic Fidelity error order.',
+        count: 1,
+        validation: 'Fails with ordered errors',
+        render: 'Forbidden',
+        data: {
+          base: 'maximum-envelope',
+          operations: [
+            'Set /person/name to 121 grapheme clusters.',
+            'Set /work/0/highlights to 6 items.',
+            'Set total records to 15.',
+            'Set total highlights to 25.',
+            'Set authoredText to 5,001 grapheme clusters.',
+          ],
+          expectedOrder: [
+            '/person/name text-length',
+            '/work/0/highlights array-count',
+            ' root record-count',
+            ' root highlight-count',
+            ' root authored-text',
+          ],
+        },
+        checks: [
+          ['Traversal', 'Field and collection errors before totals'],
+          ['Root path', 'Empty JSON Pointer for totals'],
+          ['Suppression', 'No unspecified errors'],
+          ['Artifacts', 'None'],
+        ],
+      },
+    ]
+
+    const cases = [...bases, ...mutations]
+    const walkthroughs = [
+      {
+        title: 'Language pair',
+        copy: 'Compare equivalent English and French content without changing the person or field coverage.',
+        steps: ['english', 'french'],
+      },
+      {
+        title: 'Limit contract',
+        copy: 'Move from accepted values to isolated failures, then inspect full error ordering.',
+        steps: ['boundaries', 'invalid', 'aggregate'],
+      },
+      {
+        title: 'Render pressure',
+        copy: 'Check the smallest output, narrow-column wrapping, then the two-page maximum.',
+        steps: ['minimum', 'wrapping', 'maximum'],
+      },
+    ]
+
+    let selectedId = 'minimum'
+    let selectedWalkthrough = 0
+    let completedSteps = 0
+
+    function renderCaseButtons(targetId, items) {
+      const target = document.getElementById(targetId)
+      target.replaceChildren(
+        ...items.map((item) => {
+          const button = document.createElement('button')
+          button.className = 'case-button'
+          button.textContent = item.title
+          button.setAttribute('aria-pressed', String(item.id === selectedId))
+          button.addEventListener('click', () => selectCase(item.id))
+          return button
+        }),
+      )
+    }
+
+    function selectCase(id) {
+      selectedId = id
+      const item = cases.find((candidate) => candidate.id === id)
+      document.getElementById('case-title').textContent = item.title
+      document.getElementById('case-purpose').textContent = item.purpose
+      document.getElementById('case-kind').textContent = item.kind
+      document.getElementById('case-count').textContent = String(item.count)
+      document.getElementById('case-validation').textContent = item.validation
+      document.getElementById('case-render').textContent = item.render
+      document.getElementById('case-data').textContent = JSON.stringify(item.data, null, 2)
+      const rows = item.checks.map(([name, value]) => {
+        const row = document.createElement('tr')
+        const label = document.createElement('th')
+        const content = document.createElement('td')
+        label.textContent = name
+        content.textContent = value
+        row.append(label, content)
+        return row
+      })
+      document.getElementById('expected-checks').replaceChildren(...rows)
+      renderCaseButtons('base-cases', bases)
+      renderCaseButtons('mutation-cases', mutations)
+    }
+
+    function renderPaths() {
+      const entries = [
+        ...Object.entries(pathFamilies).flatMap(([group, paths]) =>
+          paths.map((path) => `${group}: ${path}`),
+        ),
+        ...collectionCases.map(([path, limit]) => `collection ${limit}: ${path}`),
+        'document 14: records',
+        'document 24: highlights',
+        'document 5000: authoredText',
+      ]
+      document.getElementById('path-patterns').replaceChildren(
+        ...entries.map((entry) => {
+          const item = document.createElement('li')
+          item.textContent = entry
+          return item
+        }),
+      )
+    }
+
+    function renderWalkthrough() {
+      const tabs = walkthroughs.map((walkthrough, index) => {
+        const button = document.createElement('button')
+        button.className = 'tab'
+        button.textContent = walkthrough.title
+        button.setAttribute('role', 'tab')
+        button.setAttribute('aria-selected', String(index === selectedWalkthrough))
+        button.addEventListener('click', () => {
+          selectedWalkthrough = index
+          completedSteps = 0
+          renderWalkthrough()
+        })
+        return button
+      })
+      document.getElementById('walkthrough-tabs').replaceChildren(...tabs)
+      const walkthrough = walkthroughs[selectedWalkthrough]
+      document.getElementById('walkthrough-copy').textContent = walkthrough.copy
+      const steps = walkthrough.steps.map((id, index) => {
+        const item = cases.find((candidate) => candidate.id === id)
+        const button = document.createElement('button')
+        button.className = 'step'
+        button.textContent = `${index + 1}. ${item.title}`
+        button.disabled = index > completedSteps
+        button.addEventListener('click', () => {
+          selectCase(id)
+          completedSteps = Math.max(completedSteps, index + 1)
+          renderWalkthrough()
+        })
+        return button
+      })
+      document.getElementById('walkthrough-steps').replaceChildren(...steps)
+    }
+
+    renderPaths()
+    selectCase(selectedId)
+    renderWalkthrough()
+    </script>
+  </body>
+</html>
