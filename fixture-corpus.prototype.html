@@ -323,6 +323,15 @@
           </section>
 
           <section class="panel card">
+            <h2>Installed example rule</h2>
+            <p class="lede">
+              Each <code>registry/&lt;template-id&gt;/example.ts</code> keeps its required
+              template-named English data literal. A drift check must prove deep equality with
+              <code>fixtures/cv/en.json</code>. The installed example remains self-contained.
+            </p>
+          </section>
+
+          <section class="panel card">
             <h2>Proof-template output matrix</h2>
             <table>
               <thead>
@@ -693,6 +702,11 @@
           ['Generated labels', 'English exact strings'],
           ['Dates', 'Year, month, day, and current range'],
           ['Committed output', 'Catalog Reference PDF and ordered page PNGs for each template'],
+          ['Clearline pages', '2 pages; page 1 ends after Skills and page 2 starts with Education'],
+          [
+            'Signal Ledger pages',
+            '2 pages; break after the Experience, Skills, and Languages paired row',
+          ],
         ],
       },
       {
@@ -708,7 +722,9 @@
           ['Coverage', 'Same fields as canonical-en'],
           ['Generated labels', 'French exact strings'],
           ['Unicode', 'Accents, apostrophes, and French spacing'],
-          ['Pagination', 'Exact template-specific page count and markers'],
+          ['Translation', 'Translate descriptive content; preserve proper and official names'],
+          ['Language', 'Exact tag fr'],
+          ['Pagination', 'Same two-page signatures as canonical-en'],
         ],
       },
       {
@@ -802,8 +818,8 @@
           documentTotals: { records: 14, highlights: 24, authoredText: 5000 },
         },
         checks: [
-          ['Text cases', `${Object.values(pathFamilies).flat().length} concrete paths`],
-          ['Collection cases', `${collectionCases.length} concrete paths`],
+          ['Text cases', '42 concrete paths'],
+          ['Collection cases', '16 concrete paths'],
           ['Document totals', '3 cases'],
           ['Isolation', 'Only the target reaches its limit'],
           ['Pagination', 'Exact template-specific page count and markers'],
@@ -871,6 +887,7 @@
     ]
 
     const cases = [...bases, ...mutations]
+    const expectedCorpusCaseCount = 128
     const walkthroughs = [
       {
         title: 'Language pair',
@@ -986,6 +1003,16 @@
     renderPaths()
     selectCase(selectedId)
     renderWalkthrough()
+    if (
+      bases.length +
+        Object.values(pathFamilies).flat().length * 2 +
+        collectionCases.length * 2 +
+        3 * 2 +
+        1 !==
+      expectedCorpusCaseCount
+    ) {
+      throw new Error('Prototype corpus count drifted')
+    }
     </script>
   </body>
 </html>

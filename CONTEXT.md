@@ -31,3 +31,11 @@ _Avoid_: Generated fixture, test variant
 **Catalog Reference Output**:
 The committed Reference PDF and ordered page PNGs generated from the English Base Fixture for one CV Template. The same PNGs are the Catalog Preview and approved raster baseline.
 _Avoid_: Preview baseline, golden image
+
+**Pagination Signature**:
+The exact page count and ordered CV section and record markers assigned to each page for one accepted Base Fixture or Mutation Case.
+_Avoid_: Page snapshot, break map
+
+**Installed Example**:
+The self-contained English CV Data literal installed with one CV Registry Item. It must remain deeply equal to the English Base Fixture.
+_Avoid_: Demo data, sample CV
