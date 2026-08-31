@@ -332,6 +332,19 @@
           </section>
 
           <section class="panel card">
+            <h2>Mutation and pagination notation</h2>
+            <pre>Case IDs
+boundary-text-person-name
+invalid-text-person-name
+boundary-collection-work
+invalid-document-records
+
+Pagination markers
+section:&lt;section-id&gt;
+entry:&lt;section-id&gt;.&lt;zero-based-index&gt;</pre>
+          </section>
+
+          <section class="panel card">
             <h2>Proof-template output matrix</h2>
             <table>
               <thead>
@@ -597,6 +610,134 @@
       ],
     }
 
+    function breakableText(length) {
+      if (length === 1) return 'a'
+      if (length % 2 === 1) return `${'a '.repeat((length - 1) / 2)}a`
+      return `${'a '.repeat((length - 2) / 2)}aa`
+    }
+
+    function unbrokenText(length) {
+      return 'W'.repeat(length)
+    }
+
+    const canonicalPagination = {
+      clearline: [
+        [
+          'section:summary',
+          'section:work',
+          'entry:work.0',
+          'section:projects',
+          'entry:projects.0',
+          'section:skills',
+          'entry:skills.0',
+        ],
+        [
+          'section:education',
+          'entry:education.0',
+          'section:certifications',
+          'entry:certifications.0',
+          'section:awards',
+          'entry:awards.0',
+          'section:volunteer',
+          'entry:volunteer.0',
+          'section:publications',
+          'entry:publications.0',
+          'section:languages',
+          'entry:languages.0',
+          'entry:languages.1',
+        ],
+      ],
+      'signal-ledger': [
+        [
+          'section:summary',
+          'section:work',
+          'entry:work.0',
+          'section:skills',
+          'entry:skills.0',
+          'section:languages',
+          'entry:languages.0',
+          'entry:languages.1',
+        ],
+        [
+          'section:education',
+          'entry:education.0',
+          'section:certifications',
+          'entry:certifications.0',
+          'section:projects',
+          'entry:projects.0',
+          'section:awards',
+          'entry:awards.0',
+          'section:volunteer',
+          'entry:volunteer.0',
+          'section:publications',
+          'entry:publications.0',
+        ],
+      ],
+    }
+
+    const maximumPagination = {
+      clearline: [
+        [
+          'section:summary',
+          'section:work',
+          'entry:work.0',
+          'entry:work.1',
+          'entry:work.2',
+          'entry:work.3',
+          'section:projects',
+          'entry:projects.0',
+          'entry:projects.1',
+          'section:skills',
+          'entry:skills.0',
+        ],
+        [
+          'section:education',
+          'entry:education.0',
+          'entry:education.1',
+          'section:certifications',
+          'entry:certifications.0',
+          'section:awards',
+          'entry:awards.0',
+          'section:volunteer',
+          'entry:volunteer.0',
+          'section:publications',
+          'entry:publications.0',
+          'section:languages',
+          'entry:languages.0',
+        ],
+      ],
+      'signal-ledger': [
+        [
+          'section:summary',
+          'section:work',
+          'entry:work.0',
+          'entry:work.1',
+          'entry:work.2',
+          'entry:work.3',
+          'section:skills',
+          'entry:skills.0',
+          'section:languages',
+          'entry:languages.0',
+        ],
+        [
+          'section:education',
+          'entry:education.0',
+          'entry:education.1',
+          'section:certifications',
+          'entry:certifications.0',
+          'section:projects',
+          'entry:projects.0',
+          'entry:projects.1',
+          'section:awards',
+          'entry:awards.0',
+          'section:volunteer',
+          'entry:volunteer.0',
+          'section:publications',
+          'entry:publications.0',
+        ],
+      ],
+    }
+
     const pathFamilies = {
       compact40: [
         'education[].score',
@@ -767,7 +908,7 @@
           language: 'fr',
           person: {
             name: "Camille N'Diaye",
-            headline: 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
+            headline: unbrokenText(40),
             email: 'camille.ndiaye@example.com',
             phone: '+237 699 88 77 66',
             location: 'Nkolbisson, arrondissement de Yaoundé VII, Cameroun',
@@ -787,7 +928,13 @@
               dateRange: { start: '2021-03' },
               summary:
                 "Ce contenu vérifie les retours à la ligne autorisés et la conservation de l'ordre de lecture.",
-              highlights: ['UnSegmentSansCoupureDeQuaranteSignes1234'],
+              highlights: [unbrokenText(40)],
+            },
+          ],
+          skills: [
+            {
+              name: 'Accessibilité numérique',
+              keywords: [unbrokenText(40)],
             },
           ],
         },
@@ -797,6 +944,7 @@
           ['Text size', 'No reduction'],
           ['Columns', 'Signal Ledger narrow column stays readable'],
           ['Pagination', 'Exactly 1 page with ordered section and record markers'],
+          ['Unbroken locations', 'Headline, work highlight, and skill keyword'],
         ],
       },
     ]
@@ -813,9 +961,16 @@
         render: 'Structural only',
         data: {
           baseSelection: 'smallest valid shape for the target path',
-          stringOperation: 'set target to breakableAscii(limit)',
+          stringOperation: 'set target to the materialized value of breakableText(limit)',
+          breakableText40: breakableText(40),
           collectionOperation: 'set target length to limit',
           documentTotals: { records: 14, highlights: 24, authoredText: 5000 },
+          unicodeOverride: {
+            id: 'boundary-text-languages-fluency',
+            target: '/languages/0/fluency',
+            value:
+              'é 👩🏿‍💻 é 👩🏿‍💻 é 👩🏿‍💻 é 👩🏿‍💻 é 👩🏿‍💻 é 👩🏿‍💻 é 👩🏿‍💻 é 👩🏿‍💻 é 👩🏿‍💻 é 👩🏿‍💻a',
+          },
         },
         checks: [
           ['Text cases', '42 concrete paths'],
@@ -823,6 +978,7 @@
           ['Document totals', '3 cases'],
           ['Isolation', 'Only the target reaches its limit'],
           ['Pagination', 'Exact template-specific page count and markers'],
+          ['Case IDs', 'Stable kebab-case without embedded limit values'],
         ],
       },
       {
@@ -849,6 +1005,7 @@
           ['Error fields', 'Exact path, code, limit, actual'],
           ['Component calls', '0'],
           ['Artifacts', 'No DOM, PDF, or PNG'],
+          ['Unicode mirror', 'language fluency adds one multi-code-point grapheme cluster'],
         ],
       },
       {
@@ -934,6 +1091,14 @@
       document.getElementById('case-validation').textContent = item.validation
       document.getElementById('case-render').textContent = item.render
       document.getElementById('case-data').textContent = JSON.stringify(item.data, null, 2)
+      if (id === 'english' || id === 'french') {
+        document.getElementById('case-data').textContent +=
+          `\n\nPagination signatures\n${JSON.stringify(canonicalPagination, null, 2)}`
+      }
+      if (id === 'maximum') {
+        document.getElementById('case-data').textContent +=
+          `\n\nPagination signatures\n${JSON.stringify(maximumPagination, null, 2)}`
+      }
       const rows = item.checks.map(([name, value]) => {
         const row = document.createElement('tr')
         const label = document.createElement('th')
