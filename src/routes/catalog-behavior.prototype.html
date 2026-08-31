@@ -422,7 +422,8 @@
           </li>
           <li>
             The browser Back action restores the exact discovery URL. Detail links do not copy
-            discovery state into their query.
+            discovery state into their query. Discovery controls and detail controls replace the
+            current history entry. Opening a template creates a new entry.
           </li>
           <li>
             Code mode copies only the selected file. Copy status appears beside that file and clears
@@ -434,11 +435,13 @@
           </li>
           <li>
             A failed Clipboard API call keeps the command selected and shows manual keyboard-copy
-            instructions. It never reports success before the promise resolves.
+            instructions. It never reports success before the promise resolves. Copy status has no
+            timer. It clears when the command, source file, or detail mode changes.
           </li>
           <li>
             Wide screens keep the install panel sticky. Narrow screens show a fixed "Install" action
-            that opens a dismissible sheet. Panel state is not part of the URL.
+            that opens a focus-trapped sheet. Close, Escape, and backdrop click dismiss it and
+            return focus to Install. Copy actions keep it open. Panel state is not part of the URL.
           </li>
           <li>
             Unknown query keys are ignored and removed when CV UI next changes the URL. Unknown
@@ -521,9 +524,15 @@
     const currentPath = (state) =>
       state.page === 'catalog' ? catalogPath(state) : detailPath(state)
 
-    const withHistory = (state, lastChange) => ({
+    const pushHistory = (state, lastChange) => ({
       ...state,
       history: [...state.history, currentPath(state)],
+      lastChange,
+    })
+
+    const replaceHistory = (state, lastChange) => ({
+      ...state,
+      history: [...state.history.slice(0, -1), currentPath(state)],
       lastChange,
     })
 
@@ -537,7 +546,10 @@
           page: 'catalog',
           catalog: { ...state.catalog, q: action.value },
         }
-        return withHistory(next, `Search became "${action.value}". The URL stores normalized text.`)
+        return replaceHistory(
+          next,
+          `Search became "${action.value}". The URL stores normalized text.`,
+        )
       }
 
       if (action.type === 'TOGGLE_FILTER') {
@@ -550,7 +562,7 @@
           ),
         }
         const next = { ...state, page: 'catalog', catalog: { ...state.catalog, filters } }
-        return withHistory(
+        return replaceHistory(
           next,
           `${action.value} was toggled. Repeated keys stay in canonical order.`,
         )
@@ -562,7 +574,10 @@
           page: 'catalog',
           catalog: { ...state.catalog, sort: action.value },
         }
-        return withHistory(next, `Sort became ${action.value}. Search does not alter this order.`)
+        return replaceHistory(
+          next,
+          `Sort became ${action.value}. Search does not alter this order.`,
+        )
       }
 
       if (action.type === 'OPEN_TEMPLATE') {
@@ -575,7 +590,7 @@
           installPanel: state.viewport === 'wide' ? 'sticky' : 'closed',
           clipboard: { target: null, status: 'idle' },
         }
-        return withHistory(
+        return pushHistory(
           next,
           `${templates[action.templateId].name} opened at its shortest canonical URL.`,
         )
@@ -591,6 +606,7 @@
         }
         return {
           ...next,
+          history: state.history.slice(0, -1),
           lastChange: 'Back restored the discovery state. No return query was added to detail.',
         }
       }
@@ -601,7 +617,7 @@
           detail: { ...state.detail, mode: action.value },
           clipboard: { target: null, status: 'idle' },
         }
-        return withHistory(
+        return replaceHistory(
           next,
           `${action.value} mode is shareable in the URL. Preview stays implicit.`,
         )
@@ -609,7 +625,7 @@
 
       if (action.type === 'LANG') {
         const next = { ...state, detail: { ...state.detail, lang: action.value } }
-        return withHistory(
+        return replaceHistory(
           next,
           `${action.value === 'fr' ? 'French' : 'English'} example selected.`,
         )
@@ -621,7 +637,7 @@
           detail: { ...state.detail, mode: 'code', file: action.value },
           clipboard: { target: null, status: 'idle' },
         }
-        return withHistory(next, `${action.value} selected. Prior copy status cleared.`)
+        return replaceHistory(next, `${action.value} selected. Prior copy status cleared.`)
       }
 
       if (action.type === 'VIEWPORT') {
@@ -640,7 +656,10 @@
         return {
           ...state,
           installPanel: action.value,
-          lastChange: action.value === 'sheet' ? 'Install sheet opened.' : 'Install sheet closed.',
+          lastChange:
+            action.value === 'sheet'
+              ? 'Install sheet opened, trapped focus, and kept the URL unchanged.'
+              : 'Install sheet closed and returned focus to Install.',
         }
       }
 
