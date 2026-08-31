@@ -312,6 +312,17 @@
           </section>
 
           <section class="panel card">
+            <h2>Normative source tree</h2>
+            <pre>fixtures/cv/
+  minimum.json
+  en.json
+  fr.json
+  maximum-envelope.json
+  wrapping.json
+  cases.ts</pre>
+          </section>
+
+          <section class="panel card">
             <h2>Proof-template output matrix</h2>
             <table>
               <thead>
@@ -333,19 +344,19 @@
                   <td>canonical-en</td>
                   <td class="yes">PDF and PNG</td>
                   <td class="yes">PDF and PNG</td>
-                  <td>2 PDFs, ordered page PNGs</td>
+                  <td>Catalog Reference PDF and ordered page PNGs</td>
                 </tr>
                 <tr>
                   <td>canonical-fr</td>
-                  <td class="yes">PDF and PNG</td>
-                  <td class="yes">PDF and PNG</td>
-                  <td>2 PDFs, ordered page PNGs</td>
+                  <td class="yes">Structural render</td>
+                  <td class="yes">Structural render</td>
+                  <td>No raster baseline</td>
                 </tr>
                 <tr>
                   <td>maximum-envelope</td>
-                  <td class="yes">PDF and PNG</td>
-                  <td class="yes">PDF and PNG</td>
-                  <td>2 PDFs, two page PNGs each</td>
+                  <td class="yes">Structural render</td>
+                  <td class="yes">Structural render</td>
+                  <td>No raster baseline</td>
                 </tr>
                 <tr>
                   <td>Each accepted boundary</td>
@@ -681,7 +692,7 @@
           ['Coverage', 'Every field and section'],
           ['Generated labels', 'English exact strings'],
           ['Dates', 'Year, month, day, and current range'],
-          ['Templates', 'Clearline and Signal Ledger'],
+          ['Committed output', 'Catalog Reference PDF and ordered page PNGs for each template'],
         ],
       },
       {
@@ -691,13 +702,13 @@
         purpose: 'The same fictional CV with equivalent French content and Unicode stress.',
         count: 1,
         validation: 'CV Data and Fidelity pass',
-        render: 'PDF and PNG baseline',
+        render: 'Structural only',
         data: canonicalFrench,
         checks: [
           ['Coverage', 'Same fields as canonical-en'],
           ['Generated labels', 'French exact strings'],
           ['Unicode', 'Accents, apostrophes, and French spacing'],
-          ['Templates', 'Clearline and Signal Ledger'],
+          ['Pagination', 'Exact template-specific page count and markers'],
         ],
       },
       {
@@ -708,11 +719,11 @@
           'One valid document at all three document totals. It has 14 records, 24 highlights, and exactly 5,000 authored grapheme clusters.',
         count: 1,
         validation: 'CV Data and Fidelity pass',
-        render: 'PDF and PNG baseline',
+        render: 'Structural only',
         data: {
           base: 'canonical-en',
           operations: [
-            'Set repeated-section distribution to work 4, education 2, projects 2, skills 2, languages 1, certifications 1, awards 1, volunteer 1, publications 0.',
+            'Set repeated-section distribution to work 4, education 2, projects 2, skills 1, languages 1, certifications 1, awards 1, volunteer 1, publications 1.',
             'Distribute 24 highlights as 5, 5, 5, 5, and 4 across the first five highlight-capable records.',
             'Fill mapped strings with breakable ASCII text until authoredText is exactly 5,000.',
             'Keep every field and collection at or below its local limit.',
@@ -723,6 +734,7 @@
           ['highlight-count', '24 of 24'],
           ['authored-text', '5,000 of 5,000'],
           ['Pages', 'Exactly 2 for both templates'],
+          ['Pagination', 'Exact ordered section and record markers on each page'],
         ],
       },
       {
@@ -768,6 +780,7 @@
           ['Clipping', 'None'],
           ['Text size', 'No reduction'],
           ['Columns', 'Signal Ledger narrow column stays readable'],
+          ['Pagination', 'Exactly 1 page with ordered section and record markers'],
         ],
       },
     ]
@@ -793,6 +806,7 @@
           ['Collection cases', `${collectionCases.length} concrete paths`],
           ['Document totals', '3 cases'],
           ['Isolation', 'Only the target reaches its limit'],
+          ['Pagination', 'Exact template-specific page count and markers'],
         ],
       },
       {
