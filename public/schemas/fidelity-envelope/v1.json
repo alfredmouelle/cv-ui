@@ -1,0 +1,158 @@
+{
+  "$id": "https://cv-ui.alfredmouelle.com/schemas/fidelity-envelope/v1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "unicodeVersion",
+    "graphemeAlgorithm",
+    "page",
+    "textLimits",
+    "collectionLimits",
+    "documentLimits"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "unicodeVersion": {
+      "const": "17.0"
+    },
+    "graphemeAlgorithm": {
+      "const": "UAX29-47"
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "maximumPages"
+      ],
+      "properties": {
+        "format": {
+          "const": "A4"
+        },
+        "maximumPages": {
+          "const": 2
+        }
+      }
+    },
+    "textLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "compact",
+        "label",
+        "nameOrTitle",
+        "highlight",
+        "entrySummary",
+        "profileSummary",
+        "unbrokenText"
+      ],
+      "properties": {
+        "compact": {
+          "const": 40
+        },
+        "label": {
+          "const": 80
+        },
+        "nameOrTitle": {
+          "const": 120
+        },
+        "highlight": {
+          "const": 180
+        },
+        "entrySummary": {
+          "const": 320
+        },
+        "profileSummary": {
+          "const": 600
+        },
+        "unbrokenText": {
+          "const": 40
+        }
+      }
+    },
+    "collectionLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "personLinks",
+        "work",
+        "education",
+        "projects",
+        "certifications",
+        "awards",
+        "volunteer",
+        "publications",
+        "skills",
+        "skillKeywords",
+        "languages",
+        "publicationAuthors",
+        "recordHighlights"
+      ],
+      "properties": {
+        "personLinks": {
+          "const": 5
+        },
+        "work": {
+          "const": 4
+        },
+        "education": {
+          "const": 4
+        },
+        "projects": {
+          "const": 4
+        },
+        "certifications": {
+          "const": 4
+        },
+        "awards": {
+          "const": 4
+        },
+        "volunteer": {
+          "const": 4
+        },
+        "publications": {
+          "const": 4
+        },
+        "skills": {
+          "const": 8
+        },
+        "skillKeywords": {
+          "const": 8
+        },
+        "languages": {
+          "const": 6
+        },
+        "publicationAuthors": {
+          "const": 10
+        },
+        "recordHighlights": {
+          "const": 5
+        }
+      }
+    },
+    "documentLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "records",
+        "highlights",
+        "authoredText"
+      ],
+      "properties": {
+        "records": {
+          "const": 14
+        },
+        "highlights": {
+          "const": 24
+        },
+        "authoredText": {
+          "const": 5000
+        }
+      }
+    }
+  }
+}

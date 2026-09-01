@@ -1,0 +1,80 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "cv-ui",
+  "homepage": "https://cv-ui.alfredmouelle.com",
+  "items": [
+    {
+      "name": "cv-data",
+      "type": "registry:lib",
+      "title": "CV Data V1",
+      "description": "The CV UI V1 data and Fidelity Envelope contracts.",
+      "author": "Alfred Mouelle",
+      "files": [
+        {
+          "path": "registry/cv-data/cv-data.ts",
+          "type": "registry:lib",
+          "target": "@lib/cv/cv-data.ts"
+        }
+      ],
+      "dependencies": [],
+      "devDependencies": [],
+      "registryDependencies": []
+    },
+    {
+      "name": "clearline",
+      "type": "registry:block",
+      "title": "Clearline",
+      "description": "A one-column ATS-oriented CV with restrained blue rules and one linear reading order.",
+      "author": "Alfred Mouelle",
+      "files": [
+        {
+          "path": "registry/clearline/clearline.tsx",
+          "type": "registry:component",
+          "target": "@components/cv/clearline/clearline.tsx"
+        },
+        {
+          "path": "registry/clearline/clearline.css",
+          "type": "registry:style",
+          "target": "@components/cv/clearline/clearline.css"
+        },
+        {
+          "path": "registry/clearline/example.ts",
+          "type": "registry:lib",
+          "target": "@lib/cv/examples/clearline.ts"
+        },
+        {
+          "path": "registry/clearline/licenses/OFL-1.1.txt",
+          "type": "registry:file",
+          "target": "~/public/cv-ui/clearline/licenses/OFL-1.1.txt"
+        }
+      ],
+      "dependencies": [],
+      "devDependencies": [],
+      "registryDependencies": ["https://cv-ui.alfredmouelle.com/r/cv-data.json"],
+      "meta": {
+        "cvUi": {
+          "schemaVersion": "1.0",
+          "catalogOrder": 0,
+          "traits": {
+            "layout": "single-column",
+            "atsIntent": "ats-oriented",
+            "visualTone": "classic",
+            "density": "balanced",
+            "photoSupport": "not-supported"
+          },
+          "searchAliases": ["ats", "single column", "traditional", "professional"],
+          "supportedCvDataVersions": ["1"],
+          "license": "MIT",
+          "preview": {
+            "pdf": "/previews/clearline/reference.pdf",
+            "pages": [
+              { "src": "/previews/clearline/pages/001.png", "width": 1191, "height": 1684 },
+              { "src": "/previews/clearline/pages/002.png", "width": 1191, "height": 1684 }
+            ]
+          },
+          "status": "active"
+        }
+      }
+    }
+  ]
+}

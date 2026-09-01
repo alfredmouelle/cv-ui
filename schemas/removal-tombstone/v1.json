@@ -1,0 +1,30 @@
+{
+  "$id": "https://cv-ui.alfredmouelle.com/schemas/removal-tombstone/v1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "templateId", "status", "reason", "removalDate"],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "templateId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "status": {
+      "const": "removed"
+    },
+    "reason": {
+      "enum": ["legal-risk", "security-risk", "redistribution-unavailable"]
+    },
+    "removalDate": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "replacementTemplateId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    }
+  }
+}

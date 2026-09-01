@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "1.0",
+  "templates": [
+    {
+      "id": "clearline",
+      "name": "Clearline",
+      "summary": "A one-column ATS-oriented CV with restrained blue rules and one linear reading order.",
+      "author": "Alfred Mouelle",
+      "registryUrl": "/r/clearline.json",
+      "catalogOrder": 0,
+      "traits": {
+        "layout": "single-column",
+        "atsIntent": "ats-oriented",
+        "visualTone": "classic",
+        "density": "balanced",
+        "photoSupport": "not-supported"
+      },
+      "searchAliases": [
+        "ats",
+        "single column",
+        "traditional",
+        "professional"
+      ],
+      "supportedCvDataVersions": [
+        "1"
+      ],
+      "license": "MIT",
+      "preview": {
+        "pdf": "/previews/clearline/reference.pdf",
+        "pages": [
+          {
+            "src": "/previews/clearline/pages/001.png",
+            "width": 1191,
+            "height": 1684
+          },
+          {
+            "src": "/previews/clearline/pages/002.png",
+            "width": 1191,
+            "height": 1684
+          }
+        ]
+      },
+      "status": "active"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+@font-face {
+  font-family: "cv-ui-clearline-geist";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/cv-ui/clearline/fonts/geist-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+@page clearline {
+  size: A4;
+  margin: 0;
+}
+
+.clearline {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 14mm 15mm;
+  page: clearline;
+}
+
+@media print {
+  .clearline {
+    min-height: 297mm;
+  }
+}

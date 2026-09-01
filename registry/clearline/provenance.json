@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "templateId": "clearline",
+  "design": {
+    "origin": "original"
+  },
+  "resources": [
+    {
+      "path": "fonts/geist-latin-wght-normal.woff2",
+      "kind": "font",
+      "origin": "third-party",
+      "sourceName": "Geist",
+      "sourceUrl": "https://github.com/vercel/geist-font",
+      "sourceVersion": "v5",
+      "license": "OFL-1.1",
+      "copyright": "Copyright 2024 The Geist Project Authors",
+      "licensePath": "licenses/OFL-1.1.txt"
+    }
+  ]
+}
