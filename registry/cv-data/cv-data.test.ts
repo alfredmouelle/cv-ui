@@ -9,10 +9,14 @@ import {
   type CvDataV1,
   type CvDataValidationError,
   type CvDataValidationErrorCode,
+  type CvLabelsV1,
   type CvLinkV1,
   type CvPersonV1,
   type CvSectionIdV1,
   type CvValidationResult,
+  formatCvDateRangeV1,
+  formatCvPartialDateV1,
+  getCvLabelsV1,
   validateCvDataV1,
 } from './cv-data'
 
@@ -245,5 +249,206 @@ describe('CV_DATA_V1_SCHEMA', () => {
         },
       },
     })
+  })
+})
+
+describe('complete CV Data V1', () => {
+  it('accepts every core section and an opaque JSON extension', () => {
+    const input = {
+      schemaVersion: '1',
+      language: 'fr-CM',
+      person: {
+        name: 'Ada Lovelace',
+        email: 'ada@example.com',
+        links: [{ label: 'Web', url: 'https://example.com' }],
+      },
+      summary: 'Ingénieure',
+      work: [
+        {
+          organization: 'Example',
+          position: 'Engineer',
+          positionReference: {
+            vocabulary: 'ESCO',
+            uri: 'https://data.europa.eu/esco/occupation/1#entry',
+          },
+          dateRange: { start: '2024-01', end: '2024-12' },
+          highlights: ['Built it'],
+        },
+      ],
+      education: [{ institution: 'School', qualification: 'BSc' }],
+      projects: [{ name: 'Compiler' }],
+      skills: [{ name: 'TypeScript', keywords: ['Types'] }],
+      languages: [{ name: 'French', code: 'fr-CM' }],
+      certifications: [{ name: 'Certificate', issuer: 'Issuer', date: '2024' }],
+      awards: [{ title: 'Prize' }],
+      volunteer: [{ organization: 'Community', role: 'Mentor' }],
+      publications: [{ name: 'Paper', authors: ['Ada'] }],
+      extensions: { 'com.example.cv': { enabled: true, values: [null, 1, 'x'] } },
+    } as const
+
+    const result = validateCvDataV1(input)
+
+    expect(result).toEqual({ success: true, data: input })
+    if (result.success) {
+      expect(result.data).toBe(input)
+    }
+  })
+
+  it('reports format, dependency, order, extension, and unknown-field errors in traversal order', () => {
+    expect(
+      validateCvDataV1({
+        ...minimum,
+        language: 'not_a_tag',
+        person: { name: 'A', email: 'a@', links: [{ label: 'Web', url: 'ftp://example.com' }] },
+        education: [
+          {
+            institution: 'School',
+            qualificationReference: { vocabulary: 'ESCO', uri: 'relative' },
+          },
+        ],
+        certifications: [{ name: 'C', issuer: 'I', expires: '2023' }],
+        projects: [{ name: 'P', dateRange: { start: '2024', end: '2023-12-31' } }],
+        extensions: { invalid: {}, 'com.example.valid': { value: undefined } },
+        extra: true,
+      }),
+    ).toEqual({
+      success: false,
+      errors: [
+        { path: '/language', code: 'invalid-format', format: 'bcp47' },
+        { path: '/person/email', code: 'invalid-format', format: 'email' },
+        { path: '/person/links/0/url', code: 'invalid-format', format: 'http-url' },
+        {
+          path: '/education/0/qualificationReference/uri',
+          code: 'invalid-format',
+          format: 'absolute-uri',
+        },
+        {
+          path: '/projects/0/dateRange/end',
+          code: 'invalid-order',
+          relatedPath: '/projects/0/dateRange/start',
+        },
+        {
+          path: '/certifications/0/expires',
+          code: 'missing-dependent-field',
+          relatedPath: '/certifications/0/date',
+        },
+        {
+          path: '/extensions/com.example.valid/value',
+          code: 'invalid-type',
+          expected: 'json-value',
+          actual: 'undefined',
+        },
+        {
+          path: '/extensions/invalid',
+          code: 'invalid-format',
+          format: 'extension-namespace',
+        },
+        { path: '/extra', code: 'unexpected-field' },
+      ],
+    })
+  })
+
+  it('accepts empty extensions and reports cycles at their exact path', () => {
+    expect(validateCvDataV1({ ...minimum, extensions: {} })).toEqual({
+      success: true,
+      data: { ...minimum, extensions: {} },
+    })
+
+    const cycle: Record<string, unknown> = {}
+    cycle.self = cycle
+    expect(validateCvDataV1({ ...minimum, extensions: { 'com.example.cycle': cycle } })).toEqual({
+      success: false,
+      errors: [
+        {
+          path: '/extensions/com.example.cycle/self',
+          code: 'invalid-type',
+          expected: 'json-value',
+          actual: 'object',
+        },
+      ],
+    })
+  })
+
+  it.each(['a:#x#y', 'a:[]', 'https://exa[mple].com', 'urn:value%ZZ'])(
+    'rejects the malformed absolute URI %s',
+    (uri) => {
+      expect(
+        validateCvDataV1({
+          ...minimum,
+          skills: [{ name: 'Skill', skillReference: { vocabulary: 'test', uri } }],
+        }),
+      ).toEqual({
+        success: false,
+        errors: [
+          {
+            path: '/skills/0/skillReference/uri',
+            code: 'invalid-format',
+            format: 'absolute-uri',
+          },
+        ],
+      })
+    },
+  )
+
+  it.each(['http://a.b.c.xn--pokxncvks', 'https://xn--/'])(
+    'accepts the pinned URL snapshot case %s',
+    (url) => {
+      expect(
+        validateCvDataV1({
+          ...minimum,
+          person: { name: 'A', links: [{ label: 'Legacy domain', url }] },
+        }),
+      ).toMatchObject({ success: true })
+    },
+  )
+})
+
+describe('CV Data V1 labels and dates', () => {
+  it('selects French by complete tag, primary tag, then falls back to English', () => {
+    expectTypeOf(getCvLabelsV1('en')).toEqualTypeOf<CvLabelsV1>()
+    expect(getCvLabelsV1('FR-cm')).toMatchObject({ summary: 'Profil', present: 'Aujourd’hui' })
+    expect(getCvLabelsV1('de')).toMatchObject({ summary: 'Profile', present: 'Present' })
+    expect(getCvLabelsV1('not_a_tag')).toMatchObject({ summary: 'Profile' })
+  })
+
+  it('formats partial dates and ranges without changing precision', () => {
+    expect(formatCvPartialDateV1('2024', 'en')).toBe('2024')
+    expect(formatCvPartialDateV1('2024-01', 'en-US')).toBe('Jan 2024')
+    expect(formatCvPartialDateV1('2024-01-02', 'fr-CM')).toBe('2 janv. 2024')
+    expect(formatCvDateRangeV1({ start: '2024-01' }, 'fr')).toBe('janv. 2024 à Aujourd’hui')
+    expect(formatCvDateRangeV1({ start: '2024', end: '2024-02' }, 'en')).toBe('2024 to Feb 2024')
+  })
+
+  it('throws RangeError for invalid formatter input and order', () => {
+    expect(() => formatCvPartialDateV1('2023-02-29', 'en')).toThrow(RangeError)
+    expect(() => formatCvPartialDateV1(2024 as never, 'en')).toThrow(RangeError)
+    expect(() => formatCvDateRangeV1({ start: '2024', end: '2023' }, 'en')).toThrow(RangeError)
+  })
+})
+
+describe('CV Data V1 schema lexical patterns', () => {
+  it('asserts language tags and real partial dates without custom format support', () => {
+    const languagePattern = new RegExp(CV_DATA_V1_SCHEMA.properties.language.pattern)
+    const datePattern = new RegExp(CV_DATA_V1_SCHEMA.$defs.partialDate.pattern)
+    const urlPattern = new RegExp(CV_DATA_V1_SCHEMA.$defs.link.properties.url.pattern)
+
+    expect(languagePattern.test('fr-CM')).toBe(true)
+    expect(languagePattern.test('I-KlInGoN')).toBe(true)
+    expect(languagePattern.test('not_a_tag')).toBe(false)
+    expect(datePattern.test('2024-02-29')).toBe(true)
+    expect(datePattern.test('2000-02-29')).toBe(true)
+    expect(datePattern.test('1900-02-29')).toBe(false)
+    expect(datePattern.test('2023-02-29')).toBe(false)
+    expect(datePattern.test('0000')).toBe(false)
+    expect(urlPattern.test('http:')).toBe(false)
+    expect(urlPattern.test('http:example.com')).toBe(true)
+    expect(urlPattern.test('https://example.com')).toBe(true)
+    expect(urlPattern.test(' http://example.com ')).toBe(true)
+    expect(
+      validateCvDataV1({
+        ...minimum,
+        person: { name: 'A', links: [{ label: 'Spaced URL', url: ' http://example.com ' }] },
+      }),
+    ).toMatchObject({ success: true })
   })
 })
