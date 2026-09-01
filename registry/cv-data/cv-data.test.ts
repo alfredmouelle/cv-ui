@@ -190,6 +190,29 @@ describe('validateCvDataV1', () => {
       })
     },
   )
+
+  it('returns an error when an invalid object cannot be inspected', () => {
+    const throwingAccessor = Object.defineProperty(
+      { language: 'en', person: { name: 'A' } },
+      'schemaVersion',
+      {
+        enumerable: true,
+        get: () => {
+          throw new Error('unreadable')
+        },
+      },
+    )
+    const revoked = Proxy.revocable(minimum, {})
+    revoked.revoke()
+
+    for (const input of [throwingAccessor, revoked.proxy]) {
+      expect(() => validateCvDataV1(input)).not.toThrow()
+      expect(validateCvDataV1(input)).toEqual({
+        success: false,
+        errors: [{ path: '', code: 'invalid-type', expected: 'json-value', actual: 'object' }],
+      })
+    }
+  })
 })
 
 describe('CV_DATA_V1_SCHEMA', () => {

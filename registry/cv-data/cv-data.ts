@@ -137,12 +137,7 @@ export const CV_DATA_V1_SCHEMA = {
 const ROOT_PROPERTIES = ['schemaVersion', 'language', 'person'] as const
 const PERSON_PROPERTIES = ['name', 'headline', 'email', 'phone', 'location', 'links'] as const
 const LINK_PROPERTIES = ['label', 'url'] as const
-
-const WHITE_SPACE_CODE_POINTS = new Set([
-  0x0009, 0x000a, 0x000b, 0x000c, 0x000d, 0x0020, 0x0085, 0x00a0, 0x1680, 0x2000, 0x2001, 0x2002,
-  0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200a, 0x2028, 0x2029, 0x202f, 0x205f,
-  0x3000,
-])
+const HAS_NON_WHITESPACE = new RegExp(NON_WHITESPACE_PATTERN, 'u')
 
 type JsonObject = Record<string, unknown>
 
@@ -162,15 +157,7 @@ const getActualType = (value: unknown): CvActualType => {
 const isObject = (value: unknown): value is JsonObject =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
-const isEmptyString = (value: string) => {
-  for (const character of value) {
-    const codePoint = character.codePointAt(0)
-    if (codePoint !== undefined && !WHITE_SPACE_CODE_POINTS.has(codePoint)) {
-      return false
-    }
-  }
-  return true
-}
+const isEmptyString = (value: string) => !HAS_NON_WHITESPACE.test(value)
 
 const escapePointerSegment = (segment: string) =>
   segment.replaceAll('~', '~0').replaceAll('/', '~1')
@@ -209,20 +196,14 @@ const addUnknownFieldErrors = (
   }
 }
 
-const validateString = (
-  value: unknown,
-  path: string,
-  errors: CvDataValidationError[],
-): value is string => {
+const validateString = (value: unknown, path: string, errors: CvDataValidationError[]) => {
   if (typeof value !== 'string') {
     errors.push({ path, code: 'invalid-type', expected: 'string', actual: getActualType(value) })
-    return false
+    return
   }
   if (isEmptyString(value)) {
     errors.push({ path, code: 'empty-value' })
-    return false
   }
-  return true
 }
 
 const validateRequiredString = (
@@ -292,7 +273,7 @@ const validatePerson = (value: unknown, path: string, errors: CvDataValidationEr
   addUnknownFieldErrors(value, PERSON_PROPERTIES, path, errors)
 }
 
-export const validateCvDataV1 = (
+const validateCvDataV1Input = (
   input: unknown,
 ): CvValidationResult<CvDataV1, CvDataValidationError> => {
   if (!isObject(input)) {
@@ -339,4 +320,17 @@ export const validateCvDataV1 = (
   }
 
   return { success: true, data: input as CvDataV1 }
+}
+
+export const validateCvDataV1 = (
+  input: unknown,
+): CvValidationResult<CvDataV1, CvDataValidationError> => {
+  try {
+    return validateCvDataV1Input(input)
+  } catch {
+    return {
+      success: false,
+      errors: [{ path: '', code: 'invalid-type', expected: 'json-value', actual: typeof input }],
+    }
+  }
 }
