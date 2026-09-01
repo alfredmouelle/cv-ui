@@ -8,7 +8,7 @@
 
 @page clearline {
   size: A4;
-  margin: 0;
+  margin: 14mm 15mm;
 }
 
 .clearline {
@@ -18,8 +18,16 @@
   page: clearline;
 }
 
+.clearline:not(:has([data-cv-entry="work.1"]))
+  [data-cv-section="skills"]
+  + [data-cv-section="education"] {
+  break-before: page;
+}
+
 @media print {
   .clearline {
-    min-height: 297mm;
+    min-height: auto;
+    width: auto;
+    padding: 0;
   }
 }

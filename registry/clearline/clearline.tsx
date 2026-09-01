@@ -41,8 +41,8 @@ const Highlights = ({ values }: { values?: readonly string[] }) =>
       className="mt-[1.5mm] grid break-inside-avoid gap-[0.7mm] pl-[4mm]"
       data-cv-highlights="true"
     >
-      {values.map((value) => (
-        <li key={value}>{value}</li>
+      {values.map((value, index) => (
+        <li key={`${index}-${value}`}>{value}</li>
       ))}
     </ul>
   ) : null
@@ -93,8 +93,8 @@ export function ClearlineCv({ data }: { readonly data: CvData }) {
           {cv.person.location ? <span>{cv.person.location}</span> : null}
           {cv.person.links ? (
             <ul className="flex list-none flex-wrap gap-x-[4mm] gap-y-[1mm]">
-              {cv.person.links.map((link) => (
-                <li key={link.url}>
+              {cv.person.links.map((link, index) => (
+                <li key={`${index}-${link.url}`}>
                   <a className="cursor-pointer" href={link.url}>
                     {link.label}
                   </a>
@@ -115,7 +115,10 @@ export function ClearlineCv({ data }: { readonly data: CvData }) {
         <Section id="work" label={labels.work}>
           <EntryList>
             {cv.work.map((entry, index) => (
-              <li data-cv-entry={`work.${index}`} key={`${entry.organization}-${entry.position}`}>
+              <li
+                data-cv-entry={`work.${index}`}
+                key={`${index}-${entry.organization}-${entry.position}`}
+              >
                 <div className="flex items-baseline justify-between gap-[4mm]">
                   <h3 className="font-semibold text-[10pt] leading-[1.2]">
                     {entry.position},{' '}
@@ -144,7 +147,7 @@ export function ClearlineCv({ data }: { readonly data: CvData }) {
         <Section id="projects" label={labels.projects}>
           <EntryList>
             {cv.projects.map((entry, index) => (
-              <li data-cv-entry={`projects.${index}`} key={entry.name}>
+              <li data-cv-entry={`projects.${index}`} key={`${index}-${entry.name}`}>
                 <div className="flex items-baseline justify-between gap-[4mm]">
                   <h3 className="font-semibold text-[10pt] leading-[1.2]">
                     {entry.url ? (
@@ -172,13 +175,13 @@ export function ClearlineCv({ data }: { readonly data: CvData }) {
         <Section id="skills" label={labels.skills}>
           <ul className="grid list-none gap-[2mm] [&>li>ul]:flex [&>li>ul]:list-none [&>li>ul]:flex-wrap [&>li>ul]:items-baseline [&>li>ul]:gap-x-[3mm] [&>li>ul]:gap-y-[1mm] [&>li]:flex [&>li]:break-inside-avoid [&>li]:flex-wrap [&>li]:items-baseline [&>li]:gap-x-[3mm] [&>li]:gap-y-[1mm]">
             {cv.skills.map((entry, index) => (
-              <li data-cv-entry={`skills.${index}`} key={entry.name}>
+              <li data-cv-entry={`skills.${index}`} key={`${index}-${entry.name}`}>
                 <h3 className="font-semibold text-[10pt] leading-[1.2]">{entry.name}</h3>
                 {entry.level ? <span>{entry.level}</span> : null}
                 {entry.keywords ? (
                   <ul>
-                    {entry.keywords.map((keyword) => (
-                      <li key={keyword}>{keyword}</li>
+                    {entry.keywords.map((keyword, keywordIndex) => (
+                      <li key={`${keywordIndex}-${keyword}`}>{keyword}</li>
                     ))}
                   </ul>
                 ) : null}
@@ -194,7 +197,7 @@ export function ClearlineCv({ data }: { readonly data: CvData }) {
             {cv.education.map(
               // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The entry preserves the canonical field order.
               (entry, index) => (
-                <li data-cv-entry={`education.${index}`} key={entry.institution}>
+                <li data-cv-entry={`education.${index}`} key={`${index}-${entry.institution}`}>
                   <div className="flex items-baseline justify-between gap-[4mm]">
                     <h3 className="font-semibold text-[10pt] leading-[1.2]">
                       {entry.url ? (
@@ -228,7 +231,10 @@ export function ClearlineCv({ data }: { readonly data: CvData }) {
         <Section id="certifications" label={labels.certifications}>
           <EntryList>
             {cv.certifications.map((entry, index) => (
-              <li data-cv-entry={`certifications.${index}`} key={`${entry.name}-${entry.issuer}`}>
+              <li
+                data-cv-entry={`certifications.${index}`}
+                key={`${index}-${entry.name}-${entry.issuer}`}
+              >
                 <h3 className="font-semibold text-[10pt] leading-[1.2]">
                   {entry.url ? (
                     <a className="cursor-pointer" href={entry.url}>
@@ -265,7 +271,7 @@ export function ClearlineCv({ data }: { readonly data: CvData }) {
             {cv.awards.map(
               // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The entry preserves the canonical field order.
               (entry, index) => (
-                <li data-cv-entry={`awards.${index}`} key={entry.title}>
+                <li data-cv-entry={`awards.${index}`} key={`${index}-${entry.title}`}>
                   <h3 className="font-semibold text-[10pt] leading-[1.2]">{entry.title}</h3>
                   {entry.issuer || entry.date ? (
                     <DetailLine>
@@ -286,7 +292,10 @@ export function ClearlineCv({ data }: { readonly data: CvData }) {
         <Section id="volunteer" label={labels.volunteer}>
           <EntryList>
             {cv.volunteer.map((entry, index) => (
-              <li data-cv-entry={`volunteer.${index}`} key={`${entry.organization}-${entry.role}`}>
+              <li
+                data-cv-entry={`volunteer.${index}`}
+                key={`${index}-${entry.organization}-${entry.role}`}
+              >
                 <div className="flex items-baseline justify-between gap-[4mm]">
                   <h3 className="font-semibold text-[10pt] leading-[1.2]">
                     {entry.role},{' '}
@@ -317,7 +326,7 @@ export function ClearlineCv({ data }: { readonly data: CvData }) {
             {cv.publications.map(
               // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The entry preserves the canonical field order.
               (entry, index) => (
-                <li data-cv-entry={`publications.${index}`} key={entry.name}>
+                <li data-cv-entry={`publications.${index}`} key={`${index}-${entry.name}`}>
                   <h3 className="font-semibold text-[10pt] leading-[1.2]">
                     {entry.url ? (
                       <a className="cursor-pointer" href={entry.url}>
@@ -347,7 +356,7 @@ export function ClearlineCv({ data }: { readonly data: CvData }) {
         <Section id="languages" label={labels.languages}>
           <ul className="grid list-none gap-[2mm] [&>li]:flex [&>li]:break-inside-avoid [&>li]:flex-wrap [&>li]:items-baseline [&>li]:gap-x-[3mm] [&>li]:gap-y-[1mm]">
             {cv.languages.map((entry, index) => (
-              <li data-cv-entry={`languages.${index}`} key={entry.name}>
+              <li data-cv-entry={`languages.${index}`} key={`${index}-${entry.name}`}>
                 <h3 className="font-semibold text-[10pt] leading-[1.2]">{entry.name}</h3>
                 {entry.code ? <span>{entry.code}</span> : null}
                 {entry.fluency ? <span>{entry.fluency}</span> : null}
