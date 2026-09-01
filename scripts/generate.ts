@@ -128,7 +128,10 @@ const clearlineProvenanceSchema = v.strictObject({
 })
 
 const repositoryRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
-const ownedPaths = ['schemas', 'r', 'catalog'] as const
+const clearlineFontPath = 'registry/clearline/fonts/geist-latin-wght-normal.woff2'
+const clearlineFontPublicUrl = '/cv-ui/clearline/fonts/geist-latin-wght-normal.woff2'
+const clearlineLicensePath = 'registry/clearline/licenses/OFL-1.1.txt'
+const ownedPaths = ['schemas', 'r', 'catalog', 'cv-ui'] as const
 const serialize = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`
 const write = (root: string, path: string, value: string | Uint8Array): void => {
   const destination = join(root, path)
@@ -173,6 +176,7 @@ const validateClearlineProvenance = (): void => {
   }
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Validation keeps all root registry invariants together.
 const validateRegistry = (registry: Registry): void => {
   const names = new Set<string>()
   const catalogOrders = new Set<number>()
@@ -223,10 +227,14 @@ const registryItemDocument = (item: RegistryItem): Record<string, unknown> => ({
   description: item.description,
   author: item.author,
   files: item.files.map((file) => {
-    const content = readFileSync(join(repositoryRoot, file.path), 'utf8').replaceAll(
+    let content = readFileSync(join(repositoryRoot, file.path), 'utf8').replaceAll(
       "from '../cv-data/cv-data'",
       "from '~/lib/cv/cv-data'",
     )
+    if (item.name === 'clearline' && file.path === 'registry/clearline/clearline.css') {
+      const font = readFileSync(join(repositoryRoot, clearlineFontPath)).toString('base64')
+      content = content.replace(clearlineFontPublicUrl, `data:font/woff2;base64,${font}`)
+    }
     return { path: file.path, type: file.type, target: file.target, content }
   }),
   dependencies: item.dependencies,
@@ -287,6 +295,17 @@ const buildInto = (root: string): void => {
   }
   for (const item of registry.items)
     write(root, `r/${item.name}.json`, serialize(registryItemDocument(item)))
+
+  write(
+    root,
+    'cv-ui/clearline/fonts/geist-latin-wght-normal.woff2',
+    readFileSync(join(repositoryRoot, clearlineFontPath)),
+  )
+  write(
+    root,
+    'cv-ui/clearline/licenses/OFL-1.1.txt',
+    readFileSync(join(repositoryRoot, clearlineLicensePath)),
+  )
 
   const catalog = serialize(catalogDocument(registry))
   write(root, 'catalog/templates.json', catalog)

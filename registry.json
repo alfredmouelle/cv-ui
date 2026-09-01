@@ -43,11 +43,6 @@
           "target": "@lib/cv/examples/clearline.ts"
         },
         {
-          "path": "registry/clearline/fonts/geist-latin-wght-normal.woff2",
-          "type": "registry:file",
-          "target": "~/public/cv-ui/clearline/fonts/geist-latin-wght-normal.woff2"
-        },
-        {
           "path": "registry/clearline/licenses/OFL-1.1.txt",
           "type": "registry:file",
           "target": "~/public/cv-ui/clearline/licenses/OFL-1.1.txt"

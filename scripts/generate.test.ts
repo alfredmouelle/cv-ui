@@ -46,10 +46,25 @@ describe('CV Registry generation', () => {
       '@components/cv/clearline/clearline.tsx',
       '@components/cv/clearline/clearline.css',
       '@lib/cv/examples/clearline.ts',
-      '~/public/cv-ui/clearline/fonts/geist-latin-wght-normal.woff2',
       '~/public/cv-ui/clearline/licenses/OFL-1.1.txt',
     ])
     expect(generatedFiles.every(({ content }) => content.length > 0)).toBe(true)
+
+    const generatedCss = generatedFiles.find(({ target }) => target.endsWith('clearline.css'))
+    const embeddedFont = generatedCss?.content.match(
+      /url\("data:font\/woff2;base64,([A-Za-z0-9+/=]+)"\)/u,
+    )?.[1]
+    expect(embeddedFont).toBeDefined()
+    expect(Buffer.from(embeddedFont ?? '', 'base64')).toEqual(
+      readFileSync('registry/clearline/fonts/geist-latin-wght-normal.woff2'),
+    )
+    expect(JSON.stringify(registryItem)).not.toContain('\uFFFD')
+    expect(
+      readFileSync(join(outputRoot, 'cv-ui/clearline/fonts/geist-latin-wght-normal.woff2')),
+    ).toEqual(readFileSync('registry/clearline/fonts/geist-latin-wght-normal.woff2'))
+    expect(readFileSync(join(outputRoot, 'cv-ui/clearline/licenses/OFL-1.1.txt'))).toEqual(
+      readFileSync('registry/clearline/licenses/OFL-1.1.txt'),
+    )
 
     const currentCatalog = readFileSync(join(outputRoot, 'catalog/templates.json'), 'utf8')
     const versionedCatalog = readFileSync(join(outputRoot, 'catalog/v1/templates.json'), 'utf8')

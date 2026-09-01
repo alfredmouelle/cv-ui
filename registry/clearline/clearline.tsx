@@ -55,6 +55,7 @@ const DetailLine = ({ children }: { children: ReactNode }) => (
   <p className="text-[#52606d] text-[8.5pt] leading-[1.3]">{children}</p>
 )
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The renderer preserves the required linear DOM order.
 export function ClearlineCv({ data }: { readonly data: CvData }) {
   const cvDataResult = validateCvDataV1(data)
   if (!cvDataResult.success) throw new TypeError('Invalid CV Data')
@@ -190,32 +191,35 @@ export function ClearlineCv({ data }: { readonly data: CvData }) {
       {cv.education ? (
         <Section id="education" label={labels.education}>
           <EntryList>
-            {cv.education.map((entry, index) => (
-              <li data-cv-entry={`education.${index}`} key={entry.institution}>
-                <div className="flex items-baseline justify-between gap-[4mm]">
-                  <h3 className="font-semibold text-[10pt] leading-[1.2]">
-                    {entry.url ? (
-                      <a className="cursor-pointer" href={entry.url}>
-                        {entry.institution}
-                      </a>
-                    ) : (
-                      entry.institution
-                    )}
-                  </h3>
-                  {entry.dateRange ? (
-                    <DateRange language={cv.language} range={entry.dateRange} />
+            {cv.education.map(
+              // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The entry preserves the canonical field order.
+              (entry, index) => (
+                <li data-cv-entry={`education.${index}`} key={entry.institution}>
+                  <div className="flex items-baseline justify-between gap-[4mm]">
+                    <h3 className="font-semibold text-[10pt] leading-[1.2]">
+                      {entry.url ? (
+                        <a className="cursor-pointer" href={entry.url}>
+                          {entry.institution}
+                        </a>
+                      ) : (
+                        entry.institution
+                      )}
+                    </h3>
+                    {entry.dateRange ? (
+                      <DateRange language={cv.language} range={entry.dateRange} />
+                    ) : null}
+                  </div>
+                  {entry.qualification || entry.field ? (
+                    <DetailLine>
+                      {[entry.qualification, entry.field].filter(Boolean).join(', ')}
+                    </DetailLine>
                   ) : null}
-                </div>
-                {entry.qualification || entry.field ? (
-                  <DetailLine>
-                    {[entry.qualification, entry.field].filter(Boolean).join(', ')}
-                  </DetailLine>
-                ) : null}
-                {entry.location ? <DetailLine>{entry.location}</DetailLine> : null}
-                {entry.score ? <p>{entry.score}</p> : null}
-                <Highlights values={entry.highlights} />
-              </li>
-            ))}
+                  {entry.location ? <DetailLine>{entry.location}</DetailLine> : null}
+                  {entry.score ? <p>{entry.score}</p> : null}
+                  <Highlights values={entry.highlights} />
+                </li>
+              ),
+            )}
           </EntryList>
         </Section>
       ) : null}
@@ -258,19 +262,22 @@ export function ClearlineCv({ data }: { readonly data: CvData }) {
       {cv.awards ? (
         <Section id="awards" label={labels.awards}>
           <EntryList>
-            {cv.awards.map((entry, index) => (
-              <li data-cv-entry={`awards.${index}`} key={entry.title}>
-                <h3 className="font-semibold text-[10pt] leading-[1.2]">{entry.title}</h3>
-                {entry.issuer || entry.date ? (
-                  <DetailLine>
-                    {entry.issuer}
-                    {entry.issuer && entry.date ? ', ' : null}
-                    {entry.date ? <DateValue date={entry.date} language={cv.language} /> : null}
-                  </DetailLine>
-                ) : null}
-                {entry.summary ? <p>{entry.summary}</p> : null}
-              </li>
-            ))}
+            {cv.awards.map(
+              // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The entry preserves the canonical field order.
+              (entry, index) => (
+                <li data-cv-entry={`awards.${index}`} key={entry.title}>
+                  <h3 className="font-semibold text-[10pt] leading-[1.2]">{entry.title}</h3>
+                  {entry.issuer || entry.date ? (
+                    <DetailLine>
+                      {entry.issuer}
+                      {entry.issuer && entry.date ? ', ' : null}
+                      {entry.date ? <DateValue date={entry.date} language={cv.language} /> : null}
+                    </DetailLine>
+                  ) : null}
+                  {entry.summary ? <p>{entry.summary}</p> : null}
+                </li>
+              ),
+            )}
           </EntryList>
         </Section>
       ) : null}
@@ -307,28 +314,31 @@ export function ClearlineCv({ data }: { readonly data: CvData }) {
       {cv.publications ? (
         <Section id="publications" label={labels.publications}>
           <EntryList>
-            {cv.publications.map((entry, index) => (
-              <li data-cv-entry={`publications.${index}`} key={entry.name}>
-                <h3 className="font-semibold text-[10pt] leading-[1.2]">
-                  {entry.url ? (
-                    <a className="cursor-pointer" href={entry.url}>
-                      {entry.name}
-                    </a>
-                  ) : (
-                    entry.name
-                  )}
-                </h3>
-                {entry.authors ? <DetailLine>{entry.authors.join(', ')}</DetailLine> : null}
-                {entry.publisher || entry.date ? (
-                  <DetailLine>
-                    {entry.publisher}
-                    {entry.publisher && entry.date ? ', ' : null}
-                    {entry.date ? <DateValue date={entry.date} language={cv.language} /> : null}
-                  </DetailLine>
-                ) : null}
-                {entry.summary ? <p>{entry.summary}</p> : null}
-              </li>
-            ))}
+            {cv.publications.map(
+              // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: The entry preserves the canonical field order.
+              (entry, index) => (
+                <li data-cv-entry={`publications.${index}`} key={entry.name}>
+                  <h3 className="font-semibold text-[10pt] leading-[1.2]">
+                    {entry.url ? (
+                      <a className="cursor-pointer" href={entry.url}>
+                        {entry.name}
+                      </a>
+                    ) : (
+                      entry.name
+                    )}
+                  </h3>
+                  {entry.authors ? <DetailLine>{entry.authors.join(', ')}</DetailLine> : null}
+                  {entry.publisher || entry.date ? (
+                    <DetailLine>
+                      {entry.publisher}
+                      {entry.publisher && entry.date ? ', ' : null}
+                      {entry.date ? <DateValue date={entry.date} language={cv.language} /> : null}
+                    </DetailLine>
+                  ) : null}
+                  {entry.summary ? <p>{entry.summary}</p> : null}
+                </li>
+              ),
+            )}
           </EntryList>
         </Section>
       ) : null}
