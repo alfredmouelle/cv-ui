@@ -1,0 +1,147 @@
+{
+  "schemaVersion": "1",
+  "language": "fr",
+  "person": {
+    "name": "Camille N'Diaye",
+    "headline": "Ingénieure produit pour les services d'intérêt public",
+    "email": "camille.ndiaye@example.com",
+    "phone": "+33 6 12 34 56 78",
+    "location": "Paris, France",
+    "links": [
+      {
+        "label": "Portfolio",
+        "url": "https://example.com/camille"
+      },
+      {
+        "label": "Profil de code",
+        "url": "https://example.com/camille/code"
+      }
+    ]
+  },
+  "summary": "Ingénieure produit qui conçoit des services accessibles pour des communautés multilingues et transforme les contraintes publiques en logiciels fiables.",
+  "work": [
+    {
+      "organization": "Civic Works Cooperative",
+      "position": "Ingénieure produit senior",
+      "positionReference": {
+        "vocabulary": "ESCO",
+        "uri": "https://data.europa.eu/esco/occupation/example",
+        "version": "1.2"
+      },
+      "location": "Paris, France",
+      "url": "https://example.com/civic-works",
+      "dateRange": {
+        "start": "2021-03",
+        "end": "2025-06"
+      },
+      "summary": "Pilotage de services de gestion de dossiers utilisés par des équipes municipales.",
+      "highlights": [
+        "Réduction de 38 % du délai de traitement sans supprimer la vérification humaine."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "University of Lyon",
+      "qualification": "Master sciences et technologies",
+      "qualificationReference": {
+        "vocabulary": "ISCED",
+        "uri": "https://example.com/isced/7",
+        "version": "2011"
+      },
+      "field": "Interaction humain-machine",
+      "location": "Lyon, France",
+      "url": "https://example.com/university-lyon",
+      "dateRange": {
+        "start": "2015",
+        "end": "2017"
+      },
+      "score": "Mention très bien",
+      "highlights": [
+        "Recherche sur les formulaires des services publics en français et en anglais."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Formulaires clairs",
+      "role": "Mainteneuse",
+      "url": "https://example.com/plain-forms",
+      "dateRange": {
+        "start": "2023-09"
+      },
+      "summary": "Modèles de formulaires ouverts pour le clavier et les lecteurs d'écran.",
+      "highlights": ["Publication de modèles testés dans deux langues."]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Ingénierie produit accessible",
+      "skillReference": {
+        "vocabulary": "ESCO",
+        "uri": "https://example.com/skills/accessibility"
+      },
+      "level": "Avancé",
+      "keywords": ["React", "TypeScript", "Systèmes de conception"]
+    }
+  ],
+  "languages": [
+    {
+      "name": "Anglais",
+      "code": "en",
+      "fluency": "Professionnel"
+    },
+    {
+      "name": "Français",
+      "code": "fr",
+      "fluency": "Langue maternelle"
+    }
+  ],
+  "certifications": [
+    {
+      "name": "Web Accessibility Specialist",
+      "issuer": "Accessibility Guild",
+      "date": "2022-05-12",
+      "expires": "2026-05-12",
+      "credentialId": "WAS-2048",
+      "url": "https://example.com/credentials/was-2048"
+    }
+  ],
+  "awards": [
+    {
+      "title": "Prix du logiciel de service public",
+      "issuer": "Digital Commons Forum",
+      "date": "2024",
+      "summary": "Récompense pour un service multilingue conçu avec des évaluateurs locaux."
+    }
+  ],
+  "volunteer": [
+    {
+      "organization": "Code Neighbours",
+      "role": "Mentore d'atelier",
+      "location": "Saint-Denis, France",
+      "url": "https://example.com/code-neighbours",
+      "dateRange": {
+        "start": "2020-01"
+      },
+      "summary": "Anime chaque mois des ateliers web pour des personnes en reconversion.",
+      "highlights": ["Création d'exercices accessibles utilisés par douze mentors bénévoles."]
+    }
+  ],
+  "publications": [
+    {
+      "name": "Concevoir des formulaires au-delà des frontières linguistiques",
+      "authors": ["Camille N'Diaye", "Amina Diallo"],
+      "publisher": "Public Digital Review",
+      "date": "2024-11-08",
+      "url": "https://example.com/publications/language-boundaries",
+      "summary": "Étude des libellés traduits, des messages de validation et de l'accompagnement."
+    }
+  ],
+  "extensions": {
+    "com.example.cv-ui": {
+      "source": "canonical",
+      "reviewed": true
+    }
+  }
+}

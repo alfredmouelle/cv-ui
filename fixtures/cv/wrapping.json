@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1",
+  "language": "fr",
+  "person": {
+    "name": "Camille N'Diaye",
+    "headline": "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+    "email": "camille.ndiaye@example.com",
+    "phone": "+237 699 88 77 66",
+    "location": "Nkolbisson, arrondissement de Yaoundé VII, Cameroun",
+    "links": [
+      {
+        "label": "Documentation professionnelle accessible",
+        "url": "https://example.com/camille"
+      }
+    ]
+  },
+  "summary": "Une phrase avec plusieurs occasions de retour à la ligne doit rester lisible dans la colonne étroite sans réduction du corps du texte.",
+  "work": [
+    {
+      "organization": "Coopérative des services publics numériques",
+      "position": "Ingénieure produit et accessibilité",
+      "dateRange": {
+        "start": "2021-03"
+      },
+      "summary": "Ce contenu vérifie les retours à la ligne autorisés et la conservation de l'ordre de lecture.",
+      "highlights": ["WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Accessibilité numérique",
+      "keywords": ["WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"]
+    }
+  ]
+}
