@@ -8,6 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run --config vitest.config.ts --passWithNoTests",
+    "generate": "node scripts/generate.ts",
+    "generate:check": "node scripts/generate.ts --check",
     "typecheck": "tsr generate && tsc --noEmit",
     "check": "biome check .",
     "check:unsafe": "biome check --write --unsafe .",

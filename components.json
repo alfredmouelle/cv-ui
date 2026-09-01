@@ -21,5 +21,7 @@
   "rtl": false,
   "menuColor": "default-translucent",
   "menuAccent": "subtle",
-  "registries": {}
+  "registries": {
+    "@cv-ui": "https://cv-ui.alfredmouelle.com/r/{name}.json"
+  }
 }

@@ -1,0 +1,273 @@
+{
+  "$id": "https://cv-ui.alfredmouelle.com/schemas/provenance/v1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "templateId",
+    "design",
+    "resources"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "templateId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "design": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "origin"
+          ],
+          "properties": {
+            "origin": {
+              "const": "original"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "origin",
+            "sources"
+          ],
+          "properties": {
+            "origin": {
+              "const": "adapted"
+            },
+            "sources": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "url",
+                  "license",
+                  "copyright",
+                  "changes"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "url": {
+                    "type": "string",
+                    "pattern": "^https://"
+                  },
+                  "license": {
+                    "enum": [
+                      "CC0-1.0",
+                      "CC-BY-4.0",
+                      "MIT",
+                      "Apache-2.0"
+                    ]
+                  },
+                  "copyright": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "changes": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "resources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "font"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "license": {
+                      "enum": [
+                        "OFL-1.1",
+                        "Apache-2.0"
+                      ]
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "license": {
+                      "enum": [
+                        "CC0-1.0",
+                        "CC-BY-4.0",
+                        "MIT",
+                        "Apache-2.0"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "required": [
+              "path",
+              "kind",
+              "origin",
+              "license",
+              "copyright",
+              "licensePath"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^(?:fonts|assets)/[^/].*"
+              },
+              "kind": {
+                "enum": [
+                  "font",
+                  "image",
+                  "other"
+                ]
+              },
+              "origin": {
+                "const": "original"
+              },
+              "license": {
+                "enum": [
+                  "OFL-1.1",
+                  "Apache-2.0",
+                  "CC0-1.0",
+                  "CC-BY-4.0",
+                  "MIT"
+                ]
+              },
+              "copyright": {
+                "type": "string",
+                "minLength": 1
+              },
+              "licensePath": {
+                "type": "string",
+                "pattern": "^licenses/[^/].*"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "font"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "license": {
+                      "enum": [
+                        "OFL-1.1",
+                        "Apache-2.0"
+                      ]
+                    }
+                  }
+                },
+                "else": {
+                  "properties": {
+                    "license": {
+                      "enum": [
+                        "CC0-1.0",
+                        "CC-BY-4.0",
+                        "MIT",
+                        "Apache-2.0"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "required": [
+              "path",
+              "kind",
+              "origin",
+              "sourceName",
+              "sourceUrl",
+              "license",
+              "copyright",
+              "licensePath"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^(?:fonts|assets)/[^/].*"
+              },
+              "kind": {
+                "enum": [
+                  "font",
+                  "image",
+                  "other"
+                ]
+              },
+              "origin": {
+                "const": "third-party"
+              },
+              "sourceName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sourceUrl": {
+                "type": "string",
+                "pattern": "^https://"
+              },
+              "sourceVersion": {
+                "type": "string",
+                "minLength": 1
+              },
+              "license": {
+                "enum": [
+                  "OFL-1.1",
+                  "Apache-2.0",
+                  "CC0-1.0",
+                  "CC-BY-4.0",
+                  "MIT"
+                ]
+              },
+              "copyright": {
+                "type": "string",
+                "minLength": 1
+              },
+              "licensePath": {
+                "type": "string",
+                "pattern": "^licenses/[^/].*"
+              },
+              "changes": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

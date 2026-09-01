@@ -1,0 +1,541 @@
+{
+  "$id": "https://cv-ui.alfredmouelle.com/schemas/cv-data/v1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "language",
+    "person"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1"
+    },
+    "language": {
+      "type": "string",
+      "pattern": "^(?:(?:(?:[A-Za-z]{2,3}(?:-[A-Za-z]{3}){0,3}|[A-Za-z]{4}|[A-Za-z]{5,8})(?:-[A-Za-z]{4})?(?:-(?:[A-Za-z]{2}|\\d{3}))?(?:-(?:[A-Za-z0-9]{5,8}|\\d[A-Za-z0-9]{3}))*(?:-[0-9A-WY-Za-wy-z](?:-[A-Za-z0-9]{2,8})+)*(?:-[Xx](?:-[A-Za-z0-9]{1,8})+)?|[Xx](?:-[A-Za-z0-9]{1,8})+)|(?:[Aa][Rr][Tt]-[Ll][Oo][Jj][Bb][Aa][Nn]|[Cc][Ee][Ll]-[Gg][Aa][Uu][Ll][Ii][Ss][Hh]|[Ee][Nn]-[Gg][Bb]-[Oo][Ee][Dd]|[Ii]-[Aa][Mm][Ii]|[Ii]-[Bb][Nn][Nn]|[Ii]-[Dd][Ee][Ff][Aa][Uu][Ll][Tt]|[Ii]-[Ee][Nn][Oo][Cc][Hh][Ii][Aa][Nn]|[Ii]-[Hh][Aa][Kk]|[Ii]-[Kk][Ll][Ii][Nn][Gg][Oo][Nn]|[Ii]-[Ll][Uu][Xx]|[Ii]-[Mm][Ii][Nn][Gg][Oo]|[Ii]-[Nn][Aa][Vv][Aa][Jj][Oo]|[Ii]-[Pp][Ww][Nn]|[Ii]-[Tt][Aa][Oo]|[Ii]-[Tt][Aa][Yy]|[Ii]-[Tt][Ss][Uu]|[Nn][Oo]-[Bb][Oo][Kk]|[Nn][Oo]-[Nn][Yy][Nn]|[Ss][Gg][Nn]-[Bb][Ee]-[Ff][Rr]|[Ss][Gg][Nn]-[Bb][Ee]-[Nn][Ll]|[Ss][Gg][Nn]-[Cc][Hh]-[Dd][Ee]|[Zz][Hh]-[Gg][Uu][Oo][Yy][Uu]|[Zz][Hh]-[Hh][Aa][Kk][Kk][Aa]|[Zz][Hh]-[Mm][Ii][Nn]|[Zz][Hh]-[Mm][Ii][Nn]-[Nn][Aa][Nn]|[Zz][Hh]-[Xx][Ii][Aa][Nn][Gg]))$",
+      "format": "cv-bcp47-v1"
+    },
+    "person": {
+      "$ref": "#/$defs/person"
+    },
+    "summary": {
+      "type": "string",
+      "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+    },
+    "work": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/work"
+      }
+    },
+    "education": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/education"
+      }
+    },
+    "projects": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/project"
+      }
+    },
+    "skills": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/skill"
+      }
+    },
+    "languages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/language"
+      }
+    },
+    "certifications": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/certification"
+      }
+    },
+    "awards": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/award"
+      }
+    },
+    "volunteer": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/volunteer"
+      }
+    },
+    "publications": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/publication"
+      }
+    },
+    "extensions": {
+      "$ref": "#/$defs/extensions"
+    }
+  },
+  "$defs": {
+    "person": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "headline": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "email": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
+        },
+        "phone": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "location": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "links": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/link"
+          }
+        }
+      }
+    },
+    "link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "url"
+      ],
+      "properties": {
+        "label": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^[\\u0000-\\u0020]*[Hh][Tt][Tt][Pp][Ss]?:[/\\\\]*[^/?#\\\\\\s]+",
+          "format": "uri"
+        }
+      }
+    },
+    "partialDate": {
+      "type": "string",
+      "pattern": "^(?:(?!0000)\\d{4}|(?!0000)\\d{4}-(?:0[1-9]|1[0-2])|(?!0000)\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8]))|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)-02-29)$",
+      "format": "cv-partial-date-v1"
+    },
+    "dateRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "pattern": "^(?:(?!0000)\\d{4}|(?!0000)\\d{4}-(?:0[1-9]|1[0-2])|(?!0000)\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8]))|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)-02-29)$",
+          "format": "cv-partial-date-v1"
+        },
+        "end": {
+          "type": "string",
+          "pattern": "^(?:(?!0000)\\d{4}|(?!0000)\\d{4}-(?:0[1-9]|1[0-2])|(?!0000)\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8]))|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)-02-29)$",
+          "format": "cv-partial-date-v1"
+        }
+      }
+    },
+    "semanticReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "vocabulary",
+        "uri"
+      ],
+      "properties": {
+        "vocabulary": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "uri": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:",
+          "format": "uri-reference"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        }
+      }
+    },
+    "work": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "organization",
+        "position"
+      ],
+      "properties": {
+        "organization": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "position": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "positionReference": {
+          "$ref": "#/$defs/semanticReference"
+        },
+        "location": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^[\\u0000-\\u0020]*[Hh][Tt][Tt][Pp][Ss]?:[/\\\\]*[^/?#\\\\\\s]+",
+          "format": "uri"
+        },
+        "dateRange": {
+          "$ref": "#/$defs/dateRange"
+        },
+        "summary": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "highlights": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+          }
+        }
+      }
+    },
+    "volunteer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "organization",
+        "role"
+      ],
+      "properties": {
+        "organization": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "role": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "location": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^[\\u0000-\\u0020]*[Hh][Tt][Tt][Pp][Ss]?:[/\\\\]*[^/?#\\\\\\s]+",
+          "format": "uri"
+        },
+        "dateRange": {
+          "$ref": "#/$defs/dateRange"
+        },
+        "summary": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "highlights": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+          }
+        }
+      }
+    },
+    "education": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "institution"
+      ],
+      "dependentRequired": {
+        "qualificationReference": [
+          "qualification"
+        ]
+      },
+      "properties": {
+        "institution": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "qualification": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "qualificationReference": {
+          "$ref": "#/$defs/semanticReference"
+        },
+        "field": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "location": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^[\\u0000-\\u0020]*[Hh][Tt][Tt][Pp][Ss]?:[/\\\\]*[^/?#\\\\\\s]+",
+          "format": "uri"
+        },
+        "dateRange": {
+          "$ref": "#/$defs/dateRange"
+        },
+        "score": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "highlights": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+          }
+        }
+      }
+    },
+    "certification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "issuer"
+      ],
+      "dependentRequired": {
+        "expires": [
+          "date"
+        ]
+      },
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "issuer": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^(?:(?!0000)\\d{4}|(?!0000)\\d{4}-(?:0[1-9]|1[0-2])|(?!0000)\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8]))|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)-02-29)$",
+          "format": "cv-partial-date-v1"
+        },
+        "expires": {
+          "type": "string",
+          "pattern": "^(?:(?!0000)\\d{4}|(?!0000)\\d{4}-(?:0[1-9]|1[0-2])|(?!0000)\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8]))|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)-02-29)$",
+          "format": "cv-partial-date-v1"
+        },
+        "credentialId": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^[\\u0000-\\u0020]*[Hh][Tt][Tt][Pp][Ss]?:[/\\\\]*[^/?#\\\\\\s]+",
+          "format": "uri"
+        }
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "role": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^[\\u0000-\\u0020]*[Hh][Tt][Tt][Pp][Ss]?:[/\\\\]*[^/?#\\\\\\s]+",
+          "format": "uri"
+        },
+        "dateRange": {
+          "$ref": "#/$defs/dateRange"
+        },
+        "summary": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "highlights": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+          }
+        }
+      }
+    },
+    "publication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "authors": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+          }
+        },
+        "publisher": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^(?:(?!0000)\\d{4}|(?!0000)\\d{4}-(?:0[1-9]|1[0-2])|(?!0000)\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8]))|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)-02-29)$",
+          "format": "cv-partial-date-v1"
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^[\\u0000-\\u0020]*[Hh][Tt][Tt][Pp][Ss]?:[/\\\\]*[^/?#\\\\\\s]+",
+          "format": "uri"
+        },
+        "summary": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        }
+      }
+    },
+    "skill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "skillReference": {
+          "$ref": "#/$defs/semanticReference"
+        },
+        "level": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "keywords": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+          }
+        }
+      }
+    },
+    "language": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^(?:(?:(?:[A-Za-z]{2,3}(?:-[A-Za-z]{3}){0,3}|[A-Za-z]{4}|[A-Za-z]{5,8})(?:-[A-Za-z]{4})?(?:-(?:[A-Za-z]{2}|\\d{3}))?(?:-(?:[A-Za-z0-9]{5,8}|\\d[A-Za-z0-9]{3}))*(?:-[0-9A-WY-Za-wy-z](?:-[A-Za-z0-9]{2,8})+)*(?:-[Xx](?:-[A-Za-z0-9]{1,8})+)?|[Xx](?:-[A-Za-z0-9]{1,8})+)|(?:[Aa][Rr][Tt]-[Ll][Oo][Jj][Bb][Aa][Nn]|[Cc][Ee][Ll]-[Gg][Aa][Uu][Ll][Ii][Ss][Hh]|[Ee][Nn]-[Gg][Bb]-[Oo][Ee][Dd]|[Ii]-[Aa][Mm][Ii]|[Ii]-[Bb][Nn][Nn]|[Ii]-[Dd][Ee][Ff][Aa][Uu][Ll][Tt]|[Ii]-[Ee][Nn][Oo][Cc][Hh][Ii][Aa][Nn]|[Ii]-[Hh][Aa][Kk]|[Ii]-[Kk][Ll][Ii][Nn][Gg][Oo][Nn]|[Ii]-[Ll][Uu][Xx]|[Ii]-[Mm][Ii][Nn][Gg][Oo]|[Ii]-[Nn][Aa][Vv][Aa][Jj][Oo]|[Ii]-[Pp][Ww][Nn]|[Ii]-[Tt][Aa][Oo]|[Ii]-[Tt][Aa][Yy]|[Ii]-[Tt][Ss][Uu]|[Nn][Oo]-[Bb][Oo][Kk]|[Nn][Oo]-[Nn][Yy][Nn]|[Ss][Gg][Nn]-[Bb][Ee]-[Ff][Rr]|[Ss][Gg][Nn]-[Bb][Ee]-[Nn][Ll]|[Ss][Gg][Nn]-[Cc][Hh]-[Dd][Ee]|[Zz][Hh]-[Gg][Uu][Oo][Yy][Uu]|[Zz][Hh]-[Hh][Aa][Kk][Kk][Aa]|[Zz][Hh]-[Mm][Ii][Nn]|[Zz][Hh]-[Mm][Ii][Nn]-[Nn][Aa][Nn]|[Zz][Hh]-[Xx][Ii][Aa][Nn][Gg]))$",
+          "format": "cv-bcp47-v1"
+        },
+        "fluency": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        }
+      }
+    },
+    "award": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "issuer": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^(?:(?!0000)\\d{4}|(?!0000)\\d{4}-(?:0[1-9]|1[0-2])|(?!0000)\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8]))|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)-02-29)$",
+          "format": "cv-partial-date-v1"
+        },
+        "summary": {
+          "type": "string",
+          "pattern": "[^\\u0009-\\u000D\\u0020\\u0085\\u00A0\\u1680\\u2000-\\u200A\\u2028\\u2029\\u202F\\u205F\\u3000]"
+        }
+      }
+    },
+    "extensions": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.){2,}[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+      },
+      "additionalProperties": {
+        "type": "object"
+      }
+    }
+  }
+}
