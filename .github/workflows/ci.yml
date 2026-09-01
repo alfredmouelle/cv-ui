@@ -4,23 +4,88 @@ on:
   push:
     branches: [main]
   pull_request:
+  merge_group:
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  verify:
-    runs-on: ubuntu-latest
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      previews: ${{ steps.filter.outputs.previews }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
+      - name: Checkout v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Classify paths with paths-filter v4
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d
+        id: filter
+        with:
+          filters: |
+            previews:
+              - 'registry.json'
+              - 'registry/**'
+              - 'fixtures/cv/**'
+              - 'scripts/**'
+              - 'src/styles.css'
+              - 'public/previews/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'tsconfig.json'
+              - 'tsr.config.json'
+              - 'vite.config.ts'
+              - 'vitest.config.ts'
+              - '.github/workflows/**'
+              - '.github/actions/**'
+
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up pnpm with action v6
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
         with:
           version: 11.24.0
-      - uses: actions/setup-node@v7
+      - name: Set up Node with action v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 24.20.0
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run typecheck
       - run: pnpm run check
+      - run: pnpm run test
+      - run: pnpm run generate:check
+
+  previews:
+    needs: changes
+    if: needs.changes.outputs.previews == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Set up pnpm with action v6
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+        with:
+          version: 11.24.0
+      - name: Set up Node with action v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24.20.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: sudo apt-get update && sudo apt-get install --yes poppler-utils
+      - run: pnpm exec playwright install --with-deps chromium firefox webkit
+      - run: pnpm run previews:check
+        env:
+          CV_UI_PREVIEW_DIAGNOSTICS: ${{ runner.temp }}/cv-ui-preview-diagnostics
+      - if: failure()
+        name: Upload preview diagnostics with upload-artifact v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: preview-failure-${{ github.sha }}
+          path: ${{ runner.temp }}/cv-ui-preview-diagnostics
+          if-no-files-found: warn
+          retention-days: 7

@@ -2,7 +2,6 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
   renameSync,
   rmSync,
@@ -24,6 +23,7 @@ import {
   TEMPLATE_CATALOG_V1_SCHEMA,
 } from '../contracts/catalog.ts'
 import { CV_DATA_V1_SCHEMA, CV_FIDELITY_ENVELOPE_V1_SCHEMA } from '../registry/cv-data/cv-data.ts'
+import { findFileDrift, listFilePaths } from './file-drift.ts'
 
 const stringArraySchema = v.array(v.string())
 const nonEmptyStringSchema = v.pipe(
@@ -131,7 +131,7 @@ const repositoryRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const clearlineFontPath = 'registry/clearline/fonts/geist-latin-wght-normal.woff2'
 const clearlineFontPublicUrl = '/cv-ui/clearline/fonts/geist-latin-wght-normal.woff2'
 const clearlineLicensePath = 'registry/clearline/licenses/OFL-1.1.txt'
-const ownedPaths = ['schemas', 'r', 'catalog', 'cv-ui'] as const
+export const GENERATED_OUTPUT_PATHS = ['schemas', 'r', 'catalog', 'cv-ui'] as const
 const serialize = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`
 const write = (root: string, path: string, value: string | Uint8Array): void => {
   const destination = join(root, path)
@@ -157,7 +157,7 @@ const validateClearlineProvenance = (): void => {
     throw new Error('Duplicate Clearline provenance resource')
 
   const distributableFiles = ['fonts', 'assets'].flatMap((directory) =>
-    listFiles(join(repositoryRoot, 'registry/clearline', directory)).map((file) =>
+    listFilePaths(join(repositoryRoot, 'registry/clearline', directory)).map((file) =>
       relative(join(repositoryRoot, 'registry/clearline'), file),
     ),
   )
@@ -317,7 +317,7 @@ const replaceOwnedPaths = (sourceRoot: string, outputRoot: string): void => {
   const backupRoot = mkdtempSync(join(tmpdir(), 'cv-ui-generate-backup-'))
   const replaced: string[] = []
   try {
-    for (const path of ownedPaths) {
+    for (const path of GENERATED_OUTPUT_PATHS) {
       const target = join(outputRoot, path)
       if (existsSync(target)) renameSync(target, join(backupRoot, path))
       renameSync(join(sourceRoot, path), target)
@@ -327,7 +327,7 @@ const replaceOwnedPaths = (sourceRoot: string, outputRoot: string): void => {
   } catch (error) {
     for (const path of replaced.reverse())
       rmSync(join(outputRoot, path), { recursive: true, force: true })
-    for (const path of ownedPaths) {
+    for (const path of GENERATED_OUTPUT_PATHS) {
       const backup = join(backupRoot, path)
       if (existsSync(backup)) renameSync(backup, join(outputRoot, path))
     }
@@ -345,38 +345,15 @@ export const generateArtifacts = (outputRoot: string): void => {
   }
 }
 
-const listFiles = (root: string): string[] => {
-  if (!existsSync(root)) return []
-  return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(root, entry.name)
-    return entry.isDirectory() ? listFiles(path) : [path]
-  })
-}
-
 export const checkGeneratedArtifacts = (outputRoot: string): void => {
   const expectedRoot = mkdtempSync(join(tmpdir(), 'cv-ui-generate-check-'))
   try {
     buildInto(expectedRoot)
-    const changed: string[] = []
-    for (const path of ownedPaths) {
-      const expectedFiles = listFiles(join(expectedRoot, path)).map((file) =>
-        relative(expectedRoot, file),
-      )
-      const actualFiles = listFiles(join(outputRoot, path)).map((file) =>
-        relative(outputRoot, file),
-      )
-      const allFiles = new Set([...expectedFiles, ...actualFiles])
-      for (const file of allFiles) {
-        const expected = join(expectedRoot, file)
-        const actual = join(outputRoot, file)
-        if (
-          !existsSync(expected) ||
-          !existsSync(actual) ||
-          !readFileSync(expected).equals(readFileSync(actual))
-        )
-          changed.push(file)
-      }
-    }
+    const changed = GENERATED_OUTPUT_PATHS.flatMap((path) =>
+      findFileDrift(join(expectedRoot, path), join(outputRoot, path)).map((file) =>
+        join(path, file),
+      ),
+    )
     if (changed.length > 0) throw new Error(`Generated output drift:\n${changed.sort().join('\n')}`)
   } finally {
     rmSync(expectedRoot, { recursive: true, force: true })
