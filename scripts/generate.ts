@@ -104,9 +104,9 @@ const registrySchema = v.strictObject({
 })
 type Registry = v.InferOutput<typeof registrySchema>
 type RegistryItem = Registry['items'][number]
-const clearlineProvenanceSchema = v.strictObject({
+const templateProvenanceSchema = v.strictObject({
   schemaVersion: v.literal('1.0'),
-  templateId: v.literal('clearline'),
+  templateId: v.string(),
   design: v.strictObject({ origin: v.literal('original') }),
   resources: v.pipe(
     v.array(
@@ -128,9 +128,50 @@ const clearlineProvenanceSchema = v.strictObject({
 })
 
 const repositoryRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
-const clearlineFontPath = 'registry/clearline/fonts/geist-latin-wght-normal.woff2'
-const clearlineFontPublicUrl = '/cv-ui/clearline/fonts/geist-latin-wght-normal.woff2'
-const clearlineLicensePath = 'registry/clearline/licenses/OFL-1.1.txt'
+type TemplateResource = {
+  readonly sourcePath: string
+  readonly outputPath: string
+  readonly publicUrl?: string
+}
+
+const templateResources = {
+  clearline: [
+    {
+      sourcePath: 'registry/clearline/fonts/geist-latin-wght-normal.woff2',
+      outputPath: 'cv-ui/clearline/fonts/geist-latin-wght-normal.woff2',
+      publicUrl: '/cv-ui/clearline/fonts/geist-latin-wght-normal.woff2',
+    },
+    {
+      sourcePath: 'registry/clearline/licenses/OFL-1.1.txt',
+      outputPath: 'cv-ui/clearline/licenses/OFL-1.1.txt',
+    },
+  ],
+  'signal-ledger': [
+    {
+      sourcePath: 'registry/signal-ledger/fonts/bricolage-grotesque-latin-standard-normal.woff2',
+      outputPath: 'cv-ui/signal-ledger/fonts/bricolage-grotesque-latin-standard-normal.woff2',
+      publicUrl: '/cv-ui/signal-ledger/fonts/bricolage-grotesque-latin-standard-normal.woff2',
+    },
+    {
+      sourcePath: 'registry/signal-ledger/fonts/geist-latin-wght-normal.woff2',
+      outputPath: 'cv-ui/signal-ledger/fonts/geist-latin-wght-normal.woff2',
+      publicUrl: '/cv-ui/signal-ledger/fonts/geist-latin-wght-normal.woff2',
+    },
+    {
+      sourcePath: 'registry/signal-ledger/licenses/bricolage-grotesque-OFL-1.1.txt',
+      outputPath: 'cv-ui/signal-ledger/licenses/bricolage-grotesque-OFL-1.1.txt',
+    },
+    {
+      sourcePath: 'registry/signal-ledger/licenses/geist-OFL-1.1.txt',
+      outputPath: 'cv-ui/signal-ledger/licenses/geist-OFL-1.1.txt',
+    },
+  ],
+} as const satisfies Readonly<Record<string, readonly TemplateResource[]>>
+const getTemplateResources = (templateId: string): readonly TemplateResource[] | undefined => {
+  if (templateId === 'clearline' || templateId === 'signal-ledger')
+    return templateResources[templateId]
+  return undefined
+}
 export const GENERATED_OUTPUT_PATHS = ['schemas', 'r', 'catalog', 'cv-ui'] as const
 const serialize = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`
 const write = (root: string, path: string, value: string | Uint8Array): void => {
@@ -144,35 +185,37 @@ const readRegistry = (): Registry => {
   return v.parse(registrySchema, value)
 }
 
-const validateClearlineProvenance = (): void => {
+const validateTemplateProvenance = (templateId: keyof typeof templateResources): void => {
   const provenance = v.parse(
-    clearlineProvenanceSchema,
-    readJson(join(repositoryRoot, 'registry/clearline/provenance.json')),
+    templateProvenanceSchema,
+    readJson(join(repositoryRoot, `registry/${templateId}/provenance.json`)),
   )
+  if (provenance.templateId !== templateId)
+    throw new Error(`Invalid ${templateId} provenance Template ID`)
   const resources = provenance.resources
   const resourcePaths = resources.map((resource) => resource.path)
   if (resourcePaths.some((path, index) => path < (resourcePaths[index - 1] ?? '')))
-    throw new Error('Clearline provenance resources are not path-sorted')
+    throw new Error(`${templateId} provenance resources are not path-sorted`)
   if (new Set(resourcePaths).size !== resourcePaths.length)
-    throw new Error('Duplicate Clearline provenance resource')
+    throw new Error(`Duplicate ${templateId} provenance resource`)
 
   const distributableFiles = ['fonts', 'assets'].flatMap((directory) =>
-    listFilePaths(join(repositoryRoot, 'registry/clearline', directory)).map((file) =>
-      relative(join(repositoryRoot, 'registry/clearline'), file),
+    listFilePaths(join(repositoryRoot, `registry/${templateId}`, directory)).map((file) =>
+      relative(join(repositoryRoot, `registry/${templateId}`), file),
     ),
   )
   if (serialize(resourcePaths) !== serialize(distributableFiles.sort()))
-    throw new Error('Clearline resource provenance is incomplete')
+    throw new Error(`${templateId} resource provenance is incomplete`)
 
   for (const resource of resources) {
     const resourcePath = resource.path
     const licensePath = resource.licensePath
     if (!/^(?:fonts|assets)\/[^/].*/.test(resourcePath) || resourcePath.includes('..'))
-      throw new Error(`Invalid Clearline resource path: ${resourcePath}`)
+      throw new Error(`Invalid ${templateId} resource path: ${resourcePath}`)
     if (!/^licenses\/[^/].*/.test(licensePath) || licensePath.includes('..'))
-      throw new Error(`Invalid Clearline license path: ${licensePath}`)
-    if (!existsSync(join(repositoryRoot, 'registry/clearline', licensePath)))
-      throw new Error(`Missing Clearline resource license: ${licensePath}`)
+      throw new Error(`Invalid ${templateId} license path: ${licensePath}`)
+    if (!existsSync(join(repositoryRoot, `registry/${templateId}`, licensePath)))
+      throw new Error(`Missing ${templateId} resource license: ${licensePath}`)
   }
 }
 
@@ -209,14 +252,26 @@ const validateRegistry = (registry: Registry): void => {
     clearline.author !== 'Alfred Mouelle'
   )
     throw new Error('Clearline canonical metadata does not match the V1 contract')
+  const signalLedger = registry.items.find(({ name }) => name === 'signal-ledger')
+  if (!signalLedger?.meta?.cvUi) throw new Error('Signal Ledger metadata is missing')
   if (
-    clearline.dependencies.length > 0 ||
-    clearline.devDependencies.length > 0 ||
-    serialize(clearline.registryDependencies) !==
-      serialize(['https://cv-ui.alfredmouelle.com/r/cv-data.json'])
+    signalLedger.title !== 'Signal Ledger' ||
+    signalLedger.description !==
+      'A visual two-column CV with paired rows and a bold ledger-inspired header.' ||
+    signalLedger.author !== 'Alfred Mouelle'
   )
-    throw new Error('Invalid Clearline dependencies')
-  validateClearlineProvenance()
+    throw new Error('Signal Ledger canonical metadata does not match the V1 contract')
+  for (const item of [clearline, signalLedger]) {
+    if (
+      item.dependencies.length > 0 ||
+      item.devDependencies.length > 0 ||
+      serialize(item.registryDependencies) !==
+        serialize(['https://cv-ui.alfredmouelle.com/r/cv-data.json'])
+    )
+      throw new Error(`Invalid ${item.title} dependencies`)
+  }
+  for (const templateId of ['clearline', 'signal-ledger'] as const)
+    validateTemplateProvenance(templateId)
 }
 
 const registryItemDocument = (item: RegistryItem): Record<string, unknown> => ({
@@ -231,9 +286,13 @@ const registryItemDocument = (item: RegistryItem): Record<string, unknown> => ({
       "from '../cv-data/cv-data'",
       "from '~/lib/cv/cv-data'",
     )
-    if (item.name === 'clearline' && file.path === 'registry/clearline/clearline.css') {
-      const font = readFileSync(join(repositoryRoot, clearlineFontPath)).toString('base64')
-      content = content.replace(clearlineFontPublicUrl, `data:font/woff2;base64,${font}`)
+    const resources = getTemplateResources(item.name)
+    if (file.type === 'registry:style' && resources) {
+      for (const resource of resources) {
+        if (!('publicUrl' in resource) || !resource.publicUrl) continue
+        const font = readFileSync(join(repositoryRoot, resource.sourcePath)).toString('base64')
+        content = content.replace(resource.publicUrl, `data:font/woff2;base64,${font}`)
+      }
     }
     return { path: file.path, type: file.type, target: file.target, content }
   }),
@@ -296,16 +355,9 @@ const buildInto = (root: string): void => {
   for (const item of registry.items)
     write(root, `r/${item.name}.json`, serialize(registryItemDocument(item)))
 
-  write(
-    root,
-    'cv-ui/clearline/fonts/geist-latin-wght-normal.woff2',
-    readFileSync(join(repositoryRoot, clearlineFontPath)),
-  )
-  write(
-    root,
-    'cv-ui/clearline/licenses/OFL-1.1.txt',
-    readFileSync(join(repositoryRoot, clearlineLicensePath)),
-  )
+  for (const resources of Object.values(templateResources))
+    for (const resource of resources)
+      write(root, resource.outputPath, readFileSync(join(repositoryRoot, resource.sourcePath)))
 
   const catalog = serialize(catalogDocument(registry))
   write(root, 'catalog/templates.json', catalog)

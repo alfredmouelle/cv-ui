@@ -75,6 +75,67 @@
           "status": "active"
         }
       }
+    },
+    {
+      "name": "signal-ledger",
+      "type": "registry:block",
+      "title": "Signal Ledger",
+      "description": "A visual two-column CV with paired rows and a bold ledger-inspired header.",
+      "author": "Alfred Mouelle",
+      "files": [
+        {
+          "path": "registry/signal-ledger/signal-ledger.tsx",
+          "type": "registry:component",
+          "target": "@components/cv/signal-ledger/signal-ledger.tsx"
+        },
+        {
+          "path": "registry/signal-ledger/signal-ledger.css",
+          "type": "registry:style",
+          "target": "@components/cv/signal-ledger/signal-ledger.css"
+        },
+        {
+          "path": "registry/signal-ledger/example.ts",
+          "type": "registry:lib",
+          "target": "@lib/cv/examples/signal-ledger.ts"
+        },
+        {
+          "path": "registry/signal-ledger/licenses/bricolage-grotesque-OFL-1.1.txt",
+          "type": "registry:file",
+          "target": "~/public/cv-ui/signal-ledger/licenses/bricolage-grotesque-OFL-1.1.txt"
+        },
+        {
+          "path": "registry/signal-ledger/licenses/geist-OFL-1.1.txt",
+          "type": "registry:file",
+          "target": "~/public/cv-ui/signal-ledger/licenses/geist-OFL-1.1.txt"
+        }
+      ],
+      "dependencies": [],
+      "devDependencies": [],
+      "registryDependencies": ["https://cv-ui.alfredmouelle.com/r/cv-data.json"],
+      "meta": {
+        "cvUi": {
+          "schemaVersion": "1.0",
+          "catalogOrder": 1,
+          "traits": {
+            "layout": "two-column",
+            "atsIntent": "visual-first",
+            "visualTone": "modern",
+            "density": "balanced",
+            "photoSupport": "not-supported"
+          },
+          "searchAliases": ["two column", "visual", "ledger", "creative"],
+          "supportedCvDataVersions": ["1"],
+          "license": "MIT",
+          "preview": {
+            "pdf": "/previews/signal-ledger/reference.pdf",
+            "pages": [
+              { "src": "/previews/signal-ledger/pages/001.png", "width": 1191, "height": 1684 },
+              { "src": "/previews/signal-ledger/pages/002.png", "width": 1191, "height": 1684 }
+            ]
+          },
+          "status": "active"
+        }
+      }
     }
   ]
 }

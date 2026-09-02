@@ -1,0 +1,46 @@
+@font-face {
+  font-family: "cv-ui-signal-ledger-bricolage";
+  font-style: normal;
+  font-stretch: 75% 100%;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/cv-ui/signal-ledger/fonts/bricolage-grotesque-latin-standard-normal.woff2")
+    format("woff2-variations");
+}
+
+@font-face {
+  font-family: "cv-ui-signal-ledger-geist";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/cv-ui/signal-ledger/fonts/geist-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+@page signal-ledger {
+  size: A4;
+  margin: 0;
+}
+
+.signal-ledger {
+  width: 210mm;
+  min-height: 297mm;
+  page: signal-ledger;
+}
+
+@media print {
+  .signal-ledger {
+    min-height: auto;
+    width: auto;
+  }
+
+  .signal-ledger-body {
+    box-decoration-break: clone;
+  }
+}
+
+.signal-ledger:has([data-cv-section="summary"]):has([data-cv-section="work"]):has(
+    [data-cv-section="projects"]
+  )
+  [data-cv-row="education-certifications"] {
+  break-before: page;
+}

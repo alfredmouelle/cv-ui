@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client'
 import { CV_ACCEPTANCE_CORPUS_V1 } from '../fixtures/cv/cases'
 import { ClearlineCv } from '../registry/clearline/clearline'
 import { validateCvDataV1, validateCvFidelityEnvelopeV1 } from '../registry/cv-data/cv-data'
+import { SignalLedgerCv } from '../registry/signal-ledger/signal-ledger'
 import '../src/styles.css'
 
 declare global {
@@ -46,8 +47,11 @@ window.renderCvUiPdfPages = async (pdfBase64) => {
 }
 
 const caseId = new URLSearchParams(window.location.search).get('case')
+const templateId = new URLSearchParams(window.location.search).get('template')
 const corpusCase = CV_ACCEPTANCE_CORPUS_V1.find(({ id }) => id === caseId)
 if (!corpusCase) throw new Error(`Unknown Acceptance Corpus case: ${caseId ?? ''}`)
+if (templateId !== 'clearline' && templateId !== 'signal-ledger')
+  throw new Error(`Unknown CV Template: ${templateId ?? ''}`)
 
 const structural = validateCvDataV1(corpusCase.data)
 const fidelity = structural.success ? validateCvFidelityEnvelopeV1(structural.data) : structural
@@ -57,7 +61,15 @@ if (!fidelity.success) {
 } else {
   const root = document.querySelector('#root')
   if (!root) throw new Error('Preview root is missing')
-  flushSync(() => createRoot(root).render(<ClearlineCv data={fidelity.data} />))
+  flushSync(() =>
+    createRoot(root).render(
+      templateId === 'clearline' ? (
+        <ClearlineCv data={fidelity.data} />
+      ) : (
+        <SignalLedgerCv data={fidelity.data} />
+      ),
+    ),
+  )
   await document.fonts.ready
   window.cvUiPreviewState = 'ready'
 }
