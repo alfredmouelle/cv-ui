@@ -41,6 +41,47 @@
         ]
       },
       "status": "active"
+    },
+    {
+      "id": "signal-ledger",
+      "name": "Signal Ledger",
+      "summary": "A visual two-column CV with paired rows and a bold ledger-inspired header.",
+      "author": "Alfred Mouelle",
+      "registryUrl": "/r/signal-ledger.json",
+      "catalogOrder": 1,
+      "traits": {
+        "layout": "two-column",
+        "atsIntent": "visual-first",
+        "visualTone": "modern",
+        "density": "balanced",
+        "photoSupport": "not-supported"
+      },
+      "searchAliases": [
+        "two column",
+        "visual",
+        "ledger",
+        "creative"
+      ],
+      "supportedCvDataVersions": [
+        "1"
+      ],
+      "license": "MIT",
+      "preview": {
+        "pdf": "/previews/signal-ledger/reference.pdf",
+        "pages": [
+          {
+            "src": "/previews/signal-ledger/pages/001.png",
+            "width": 1191,
+            "height": 1684
+          },
+          {
+            "src": "/previews/signal-ledger/pages/002.png",
+            "width": 1191,
+            "height": 1684
+          }
+        ]
+      },
+      "status": "active"
     }
   ]
 }

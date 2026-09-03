@@ -31,6 +31,8 @@ type PreviewCommandOptions = {
 }
 
 const repositoryRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
+const templateIds = ['signal-ledger', 'clearline'] as const
+type TemplateId = (typeof templateIds)[number]
 
 export const sanitizePdfMetadata = (pdf: Buffer): Buffer =>
   Buffer.from(
@@ -253,7 +255,9 @@ const inspectPdfPage = async (
       baseline < minimumInset - 0.75 ||
       top > viewport.height - minimumInset + 0.75
     )
-      throw new Error(`PDF text reaches a page edge on page ${pageNumber}: ${item.str}`)
+      throw new Error(
+        `PDF text reaches a page edge on page ${pageNumber}: ${item.str} (${left}, ${right}, ${baseline}, ${top})`,
+      )
   }
 
   const text = content.items.flatMap((item) => ('str' in item ? [item.str] : [])).join('')
@@ -266,7 +270,11 @@ const inspectPdfPage = async (
   return { text, links }
 }
 
-const inspectPdfText = (pdfText: string, expectedText: string): void => {
+const inspectPdfText = (
+  pdfText: string,
+  expectedText: string,
+  pageTextLengths: readonly number[],
+): void => {
   const actual = compactText(pdfText)
   const expected = compactText(expectedText)
   const mismatchIndex = [...expected].findIndex(
@@ -274,7 +282,7 @@ const inspectPdfText = (pdfText: string, expectedText: string): void => {
   )
   if (mismatchIndex !== -1 || actual.length !== expected.length)
     throw new Error(
-      `PDF text does not match DOM reading order at ${mismatchIndex}: ${[...actual][mismatchIndex] ?? '<end>'} != ${[...expected][mismatchIndex] ?? '<end>'}`,
+      `PDF text does not match DOM reading order at ${mismatchIndex}: ${[...actual][mismatchIndex] ?? '<end>'} != ${[...expected][mismatchIndex] ?? '<end>'}; pages: ${pageTextLengths.join(', ')}`,
     )
 }
 
@@ -330,15 +338,21 @@ const inspectPdf = async (
 ): Promise<void> => {
   const loadingTask = getDocument({ data: new Uint8Array(pdf) })
   const document = await loadingTask.promise
-  if (document.numPages !== expectedMarkers.length)
-    throw new Error(`Expected ${expectedMarkers.length} PDF pages, received ${document.numPages}`)
 
   const pages: PdfPageInspection[] = []
   for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
     pages.push(await inspectPdfPage(document, pageNumber))
   }
+  if (document.numPages !== expectedMarkers.length)
+    throw new Error(
+      `Expected ${expectedMarkers.length} PDF pages, received ${document.numPages}: ${pages.map(({ text }) => compactText(text).length).join(', ')}`,
+    )
 
-  inspectPdfText(pages.map(({ text }) => text).join(''), expectedText)
+  inspectPdfText(
+    pages.map(({ text }) => text).join(''),
+    expectedText,
+    pages.map(({ text }) => compactText(text).length),
+  )
   inspectPdfMarkers(
     pages.map(({ text }) => compactText(text)),
     markerSamples,
@@ -351,7 +365,11 @@ const inspectPdf = async (
   await loadingTask.destroy()
 }
 
-const inspectEmbeddedFonts = (pdf: Buffer): void => {
+const inspectEmbeddedFonts = (
+  pdf: Buffer,
+  templateId: TemplateId,
+  requireEveryFont: boolean,
+): void => {
   const root = mkdtempSync(join(tmpdir(), 'cv-ui-font-check-'))
   const path = join(root, 'capture.pdf')
   try {
@@ -362,11 +380,16 @@ const inspectEmbeddedFonts = (pdf: Buffer): void => {
       return columns ? [{ name: columns[1], embedded: columns[2] === 'yes' }] : []
     })
     if (fonts.length === 0) throw new Error('Reference PDF contains no fonts')
-    if (!fonts.some((font) => font.name?.includes('Geist')))
-      throw new Error('Reference PDF substituted the Clearline font')
+    const expectedFonts = templateId === 'clearline' ? ['Geist'] : ['BricolageGrotesque', 'Geist']
+    for (const expectedFont of expectedFonts)
+      if (requireEveryFont && !fonts.some((font) => font.name?.includes(expectedFont)))
+        throw new Error(`Reference PDF substituted the ${templateId} font: ${expectedFont}`)
     for (const font of fonts) {
       if (!font.embedded) throw new Error(`Reference PDF font is not embedded: ${font.name}`)
-      if (!font.name?.includes('Geist') && !/(?:Apple|Noto)ColorEmoji/u.test(font.name ?? ''))
+      if (
+        !expectedFonts.some((expectedFont) => font.name?.includes(expectedFont)) &&
+        !/(?:Apple|Noto)ColorEmoji/u.test(font.name ?? '')
+      )
         throw new Error(`Reference PDF substituted font: ${font.name}`)
     }
   } finally {
@@ -374,44 +397,49 @@ const inspectEmbeddedFonts = (pdf: Buffer): void => {
   }
 }
 
-const inspectLayout = async (page: import('playwright').Page): Promise<void> => {
-  const result = await page.locator('article[data-cv-template="clearline"]').evaluate((article) => {
-    const articleRect = article.getBoundingClientRect()
-    const groups = [article, ...article.querySelectorAll('header, section, [data-cv-entry]')].map(
-      (container) => [...container.children],
-    )
-    const invalid = [...article.querySelectorAll('*')].some((element) => {
-      const rect = element.getBoundingClientRect()
-      return (
-        ![rect.x, rect.y, rect.width, rect.height].every(Number.isFinite) ||
-        rect.left < articleRect.left - 1 ||
-        rect.right > articleRect.right + 1 ||
-        rect.top < articleRect.top - 1 ||
-        rect.bottom > articleRect.bottom + 1
+const inspectLayout = async (
+  page: import('playwright').Page,
+  templateId: TemplateId,
+): Promise<void> => {
+  const result = await page
+    .locator(`article[data-cv-template="${templateId}"]`)
+    .evaluate((article) => {
+      const articleRect = article.getBoundingClientRect()
+      const groups = [article, ...article.querySelectorAll('header, section, [data-cv-entry]')].map(
+        (container) => [...container.children],
       )
-    })
-    const overlap = groups.some((elements) =>
-      elements.some((element, index) => {
+      const invalid = [...article.querySelectorAll('*')].some((element) => {
         const rect = element.getBoundingClientRect()
-        return elements.slice(index + 1).some((sibling) => {
-          const siblingRect = sibling.getBoundingClientRect()
-          return (
-            rect.right > siblingRect.left + 1 &&
-            siblingRect.right > rect.left + 1 &&
-            rect.bottom > siblingRect.top + 1 &&
-            siblingRect.bottom > rect.top + 1
-          )
-        })
-      }),
-    )
-    return {
-      invalid,
-      overlap,
-      width: articleRect.width,
-      scrollWidth: article.scrollWidth,
-      fonts: document.fonts.status,
-    }
-  })
+        return (
+          ![rect.x, rect.y, rect.width, rect.height].every(Number.isFinite) ||
+          rect.left < articleRect.left - 1 ||
+          rect.right > articleRect.right + 1 ||
+          rect.top < articleRect.top - 1 ||
+          rect.bottom > articleRect.bottom + 1
+        )
+      })
+      const overlap = groups.some((elements) =>
+        elements.some((element, index) => {
+          const rect = element.getBoundingClientRect()
+          return elements.slice(index + 1).some((sibling) => {
+            const siblingRect = sibling.getBoundingClientRect()
+            return (
+              rect.right > siblingRect.left + 1 &&
+              siblingRect.right > rect.left + 1 &&
+              rect.bottom > siblingRect.top + 1 &&
+              siblingRect.bottom > rect.top + 1
+            )
+          })
+        }),
+      )
+      return {
+        invalid,
+        overlap,
+        width: articleRect.width,
+        scrollWidth: article.scrollWidth,
+        fonts: document.fonts.status,
+      }
+    })
   if (result.invalid || result.overlap || result.fonts !== 'loaded')
     throw new Error(`Preview layout is incomplete: ${JSON.stringify(result)}`)
   if (Math.abs(result.width - 793.7) > 1 || result.scrollWidth > result.width + 1)
@@ -425,6 +453,7 @@ const inspectRenderedCase = async (
   corpusCase: CorpusCase,
   browserName: string,
   failures: readonly string[],
+  templateId: TemplateId,
 ): Promise<boolean> => {
   const state = await page.evaluate(() => window.cvUiPreviewState)
   if (!corpusCase.expected.success) {
@@ -434,7 +463,11 @@ const inspectRenderedCase = async (
   }
 
   if (state !== 'ready') throw new Error(`${browserName} did not render ${corpusCase.id}`)
-  await inspectLayout(page)
+  try {
+    await inspectLayout(page, templateId)
+  } catch (error) {
+    throw new Error(`${browserName} ${templateId} ${corpusCase.id}: ${String(error)}`)
+  }
   if (failures.length > 0)
     throw new Error(`${browserName} ${corpusCase.id} failed:\n${failures.join('\n')}`)
   return true
@@ -444,6 +477,7 @@ const captureChromiumCase = async (
   page: import('playwright').Page,
   corpusCase: CorpusCase,
   browserName: string,
+  templateId: TemplateId,
   onEnglishPdf?: (page: import('playwright').Page, pdf: Buffer) => Promise<void>,
 ): Promise<void> => {
   if (!('pagination' in corpusCase)) throw new Error(`Missing pagination: ${corpusCase.id}`)
@@ -488,13 +522,13 @@ const captureChromiumCase = async (
     if (corpusCase.id === 'en') await onEnglishPdf?.(page, pdf)
     await inspectPdf(
       pdf,
-      corpusCase.pagination.clearline,
+      corpusCase.pagination[templateId],
       markerSamples,
       expectedText,
       expectedLinks,
       corpusCase.id === 'en' || corpusCase.id === 'fr',
     )
-    inspectEmbeddedFonts(pdf)
+    inspectEmbeddedFonts(pdf, templateId, corpusCase.id === 'en')
   } catch (error) {
     throw new Error(`${browserName} ${corpusCase.id}: ${String(error)}`)
   }
@@ -504,6 +538,7 @@ const captureBrowserCases = async (
   browserType: BrowserType,
   baseUrl: string,
   browserName: string,
+  templateId: TemplateId,
   onEnglishPdf?: (page: import('playwright').Page, pdf: Buffer) => Promise<void>,
 ): Promise<void> => {
   const browser = await browserType.launch()
@@ -518,11 +553,19 @@ const captureBrowserCases = async (
 
     for (const corpusCase of CV_ACCEPTANCE_CORPUS_V1) {
       failures.length = 0
-      await page.goto(`${baseUrl}/scripts/preview.html?case=${encodeURIComponent(corpusCase.id)}`)
+      await page.goto(
+        `${baseUrl}/scripts/preview.html?template=${templateId}&case=${encodeURIComponent(corpusCase.id)}`,
+      )
       await page.waitForFunction(() => window.cvUiPreviewState !== undefined)
-      const rendered = await inspectRenderedCase(page, corpusCase, browserName, failures)
+      const rendered = await inspectRenderedCase(
+        page,
+        corpusCase,
+        browserName,
+        failures,
+        templateId,
+      )
       if (rendered && browserType === chromium)
-        await captureChromiumCase(page, corpusCase, browserName, onEnglishPdf)
+        await captureChromiumCase(page, corpusCase, browserName, templateId, onEnglishPdf)
     }
   } finally {
     await browser.close()
@@ -542,26 +585,27 @@ const capturePreviews = async (outputRoot: string): Promise<void> => {
   const baseUrl = `http://127.0.0.1:${address.port}`
 
   try {
-    await captureBrowserCases(chromium, baseUrl, 'Chromium', async (page, pdf) => {
-      const previewRoot = join(outputRoot, 'previews/clearline')
-      mkdirSync(join(previewRoot, 'pages'), { recursive: true })
-      const pdfPath = join(previewRoot, 'reference.pdf')
-      writeFileSync(pdfPath, pdf)
-      const images = await page.evaluate(
-        (encodedPdf) => window.renderCvUiPdfPages(encodedPdf),
-        pdf.toString('base64'),
-      )
-      for (const [index, image] of images.entries()) {
-        const bytes = Buffer.from(image.slice(image.indexOf(',') + 1), 'base64')
-        const width = bytes.readUInt32BE(16)
-        const height = bytes.readUInt32BE(20)
-        if (width !== 1191 || height !== 1684)
-          throw new Error(`Invalid page image geometry: ${width}x${height}`)
-        writeFileSync(join(previewRoot, `pages/${String(index + 1).padStart(3, '0')}.png`), bytes)
-      }
-    })
-    await captureBrowserCases(firefox, baseUrl, 'Firefox')
-    await captureBrowserCases(webkit, baseUrl, 'WebKit')
+    for (const templateId of templateIds) {
+      await captureBrowserCases(chromium, baseUrl, 'Chromium', templateId, async (page, pdf) => {
+        const previewRoot = join(outputRoot, `previews/${templateId}`)
+        mkdirSync(join(previewRoot, 'pages'), { recursive: true })
+        writeFileSync(join(previewRoot, 'reference.pdf'), pdf)
+        const images = await page.evaluate(
+          (encodedPdf) => window.renderCvUiPdfPages(encodedPdf),
+          pdf.toString('base64'),
+        )
+        for (const [index, image] of images.entries()) {
+          const bytes = Buffer.from(image.slice(image.indexOf(',') + 1), 'base64')
+          const width = bytes.readUInt32BE(16)
+          const height = bytes.readUInt32BE(20)
+          if (width !== 1191 || height !== 1684)
+            throw new Error(`Invalid page image geometry: ${width}x${height}`)
+          writeFileSync(join(previewRoot, `pages/${String(index + 1).padStart(3, '0')}.png`), bytes)
+        }
+      })
+      await captureBrowserCases(firefox, baseUrl, 'Firefox', templateId)
+      await captureBrowserCases(webkit, baseUrl, 'WebKit', templateId)
+    }
   } finally {
     await server.close()
   }
