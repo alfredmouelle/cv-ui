@@ -24,6 +24,7 @@ import {
 } from '../contracts/catalog.ts'
 import { CV_DATA_V1_SCHEMA, CV_FIDELITY_ENVELOPE_V1_SCHEMA } from '../registry/cv-data/cv-data.ts'
 import { findFileDrift, listFilePaths } from './file-drift.ts'
+import { findProvenanceFailures } from './provenance.ts'
 
 const stringArraySchema = v.array(v.string())
 const nonEmptyStringSchema = v.pipe(
@@ -104,29 +105,6 @@ const registrySchema = v.strictObject({
 })
 type Registry = v.InferOutput<typeof registrySchema>
 type RegistryItem = Registry['items'][number]
-const templateProvenanceSchema = v.strictObject({
-  schemaVersion: v.literal('1.0'),
-  templateId: v.string(),
-  design: v.strictObject({ origin: v.literal('original') }),
-  resources: v.pipe(
-    v.array(
-      v.strictObject({
-        path: v.string(),
-        kind: v.literal('font'),
-        origin: v.literal('third-party'),
-        sourceName: nonEmptyStringSchema,
-        sourceUrl: v.pipe(v.string(), v.url(), v.startsWith('https://')),
-        sourceVersion: v.optional(nonEmptyStringSchema),
-        license: v.union([v.literal('OFL-1.1'), v.literal('Apache-2.0')]),
-        copyright: nonEmptyStringSchema,
-        licensePath: v.string(),
-        changes: v.optional(nonEmptyStringSchema),
-      }),
-    ),
-    v.minLength(1),
-  ),
-})
-
 const repositoryRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 type TemplateResource = {
   readonly sourcePath: string
@@ -185,38 +163,18 @@ const readRegistry = (): Registry => {
   return v.parse(registrySchema, value)
 }
 
-const validateTemplateProvenance = (templateId: keyof typeof templateResources): void => {
-  const provenance = v.parse(
-    templateProvenanceSchema,
-    readJson(join(repositoryRoot, `registry/${templateId}/provenance.json`)),
-  )
-  if (provenance.templateId !== templateId)
-    throw new Error(`Invalid ${templateId} provenance Template ID`)
-  const resources = provenance.resources
-  const resourcePaths = resources.map((resource) => resource.path)
-  if (resourcePaths.some((path, index) => path < (resourcePaths[index - 1] ?? '')))
-    throw new Error(`${templateId} provenance resources are not path-sorted`)
-  if (new Set(resourcePaths).size !== resourcePaths.length)
-    throw new Error(`Duplicate ${templateId} provenance resource`)
-
-  const distributableFiles = ['fonts', 'assets'].flatMap((directory) =>
-    listFilePaths(join(repositoryRoot, `registry/${templateId}`, directory)).map((file) =>
-      relative(join(repositoryRoot, `registry/${templateId}`), file),
-    ),
-  )
-  if (serializeJson(resourcePaths) !== serializeJson(distributableFiles.sort()))
-    throw new Error(`${templateId} resource provenance is incomplete`)
-
-  for (const resource of resources) {
-    const resourcePath = resource.path
-    const licensePath = resource.licensePath
-    if (!/^(?:fonts|assets)\/[^/].*/.test(resourcePath) || resourcePath.includes('..'))
-      throw new Error(`Invalid ${templateId} resource path: ${resourcePath}`)
-    if (!/^licenses\/[^/].*/.test(licensePath) || licensePath.includes('..'))
-      throw new Error(`Invalid ${templateId} license path: ${licensePath}`)
-    if (!existsSync(join(repositoryRoot, `registry/${templateId}`, licensePath)))
-      throw new Error(`Missing ${templateId} resource license: ${licensePath}`)
-  }
+const validateTemplateProvenance = (templateId: string): void => {
+  const templateRoot = join(repositoryRoot, `registry/${templateId}`)
+  const listRelativePaths = (directory: string): string[] =>
+    listFilePaths(join(templateRoot, directory)).map((file) => relative(templateRoot, file))
+  const failures = findProvenanceFailures({
+    templateId,
+    provenance: readJson(join(templateRoot, 'provenance.json')),
+    distributablePaths: ['assets', 'fonts'].flatMap(listRelativePaths).sort(),
+    licensePaths: listRelativePaths('licenses'),
+  })
+  if (failures.length > 0)
+    throw new Error(`Invalid ${templateId} provenance:\n${failures.join('\n')}`)
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Validation keeps all root registry invariants together.
@@ -270,8 +228,7 @@ const validateRegistry = (registry: Registry): void => {
     )
       throw new Error(`Invalid ${item.title} dependencies`)
   }
-  for (const templateId of ['clearline', 'signal-ledger'] as const)
-    validateTemplateProvenance(templateId)
+  for (const item of registry.items) if (item.meta) validateTemplateProvenance(item.name)
 }
 
 const registryItemDocument = (item: RegistryItem): Record<string, unknown> => ({
