@@ -37,6 +37,19 @@ export type CvTemplateCatalogDocumentV1 = {
   readonly schemaVersion: '1.0'
   readonly templates: readonly CvTemplateCatalogEntryV1[]
 }
+export const IMMUTABLE_CACHE_CONTROL = 'public, max-age=31536000, immutable'
+
+export type ReleaseArtifactV1 = {
+  readonly path: string
+  readonly size: number
+  readonly mediaType: 'application/json' | 'application/pdf' | 'image/png'
+  readonly sha256: string
+}
+export type ReleaseManifestV1 = {
+  readonly schemaVersion: '1.0'
+  readonly releaseId: string
+  readonly artifacts: readonly ReleaseArtifactV1[]
+}
 
 const templateId = { type: 'string', pattern: '^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$' } as const
 const authoringOrReleasePath = (suffix: string): { type: 'string'; pattern: string } => ({
