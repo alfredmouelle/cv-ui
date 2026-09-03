@@ -437,7 +437,7 @@ export function SignalLedgerCv({ data }: { readonly data: CvData }) {
       <div
         className={
           isMaximumEnvelope
-            ? 'signal-ledger-body grid gap-y-[6mm] px-[14mm] py-[12mm] tracking-[-0.08em] [word-spacing:-0.2em]'
+            ? 'signal-ledger-body grid gap-y-[6mm] px-[14mm] py-[12mm] tracking-[-0.1em] [word-spacing:-0.2em]'
             : 'signal-ledger-body grid gap-y-[6mm] px-[14mm] py-[12mm]'
         }
       >
