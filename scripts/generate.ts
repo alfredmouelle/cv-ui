@@ -173,7 +173,7 @@ const getTemplateResources = (templateId: string): readonly TemplateResource[] |
   return undefined
 }
 export const GENERATED_OUTPUT_PATHS = ['schemas', 'r', 'catalog', 'cv-ui'] as const
-const serialize = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`
+export const serializeJson = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`
 const write = (root: string, path: string, value: string | Uint8Array): void => {
   const destination = join(root, path)
   mkdirSync(dirname(destination), { recursive: true })
@@ -204,7 +204,7 @@ const validateTemplateProvenance = (templateId: keyof typeof templateResources):
       relative(join(repositoryRoot, `registry/${templateId}`), file),
     ),
   )
-  if (serialize(resourcePaths) !== serialize(distributableFiles.sort()))
+  if (serializeJson(resourcePaths) !== serializeJson(distributableFiles.sort()))
     throw new Error(`${templateId} resource provenance is incomplete`)
 
   for (const resource of resources) {
@@ -265,8 +265,8 @@ const validateRegistry = (registry: Registry): void => {
     if (
       item.dependencies.length > 0 ||
       item.devDependencies.length > 0 ||
-      serialize(item.registryDependencies) !==
-        serialize(['https://cv-ui.alfredmouelle.com/r/cv-data.json'])
+      serializeJson(item.registryDependencies) !==
+        serializeJson(['https://cv-ui.alfredmouelle.com/r/cv-data.json'])
     )
       throw new Error(`Invalid ${item.title} dependencies`)
   }
@@ -348,18 +348,18 @@ const buildInto = (root: string): void => {
   } as const
   for (const [path, schema] of Object.entries(schemas)) {
     const sourceSchema = readJson(join(repositoryRoot, 'schemas', path))
-    if (serialize(sourceSchema) !== serialize(schema))
+    if (serializeJson(sourceSchema) !== serializeJson(schema))
       throw new Error(`Canonical schema drift: ${path}`)
-    write(root, `schemas/${path}`, serialize(schema))
+    write(root, `schemas/${path}`, serializeJson(schema))
   }
   for (const item of registry.items)
-    write(root, `r/${item.name}.json`, serialize(registryItemDocument(item)))
+    write(root, `r/${item.name}.json`, serializeJson(registryItemDocument(item)))
 
   for (const resources of Object.values(templateResources))
     for (const resource of resources)
       write(root, resource.outputPath, readFileSync(join(repositoryRoot, resource.sourcePath)))
 
-  const catalog = serialize(catalogDocument(registry))
+  const catalog = serializeJson(catalogDocument(registry))
   write(root, 'catalog/templates.json', catalog)
   write(root, 'catalog/v1/templates.json', catalog)
 }

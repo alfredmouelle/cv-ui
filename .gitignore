@@ -8,5 +8,6 @@ dist-ssr
 .tanstack
 .wrangler
 .output
+.releases
 .vinxi
 __unconfig*

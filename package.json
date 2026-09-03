@@ -12,6 +12,8 @@
     "generate:check": "node scripts/generate.ts --check",
     "previews:update": "node scripts/previews.ts --update",
     "previews:check": "node scripts/previews.ts --check",
+    "release": "node scripts/release.ts",
+    "release:verify": "node scripts/release.ts --verify",
     "typecheck": "tsr generate && tsc --noEmit",
     "check": "biome check .",
     "check:unsafe": "biome check --write --unsafe .",
