@@ -1,5 +1,6 @@
 import { createRootRoute, HeadContent, Link, Scripts } from '@tanstack/react-router'
 import { lazy, Suspense } from 'react'
+import { SiteHeader } from '~/components/site-header'
 import { siteConfig } from '~/lib/site-config'
 
 import appCss from '../styles.css?url'
@@ -71,6 +72,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <SiteHeader />
         {children}
         <Suspense fallback={null}>
           <Devtools />
