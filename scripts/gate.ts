@@ -259,7 +259,7 @@ const runCommand = async (command: string): Promise<number> => {
   )
   await publish(context, result)
   process.stdout.write(`${result.conclusion}\n${summarize(result)}\n`)
-  return result.conclusion === 'success' ? 0 : 1
+  return result.conclusion === 'failure' ? 1 : 0
 }
 
 const isMain = process.argv[1] ? resolve(process.argv[1]) === fileURLToPath(import.meta.url) : false

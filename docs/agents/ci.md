@@ -34,6 +34,9 @@ merge, because a required context that is absent counts as pending. The result i
 Governance never exempts a technical check. When the `governance` job reports nothing usable,
 `required` fails closed.
 
+The gate jobs turn red only for a `failure`. A pending result is a normal state, so the jobs stay
+green and the pending verdict shows on `CI / required` alone.
+
 ## Preview applicability
 
 `scripts/preview-inputs.ts` is the one classifier. For a pull request, the `changes` job runs it
