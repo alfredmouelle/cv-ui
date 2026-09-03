@@ -1,4 +1,4 @@
 export const siteConfig = {
-  name: 'cv-ui',
-  description: 'A working application, wired around your choices.',
+  name: 'CV UI',
+  description: 'Copy-pasteable CV templates for React and Tailwind, ready for people and agents.',
 } as const
