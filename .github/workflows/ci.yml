@@ -4,56 +4,52 @@ on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
   merge_group:
 
+permissions:
+  contents: read
+
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   changes:
     runs-on: ubuntu-24.04
     outputs:
-      previews: ${{ steps.filter.outputs.previews }}
+      previews: ${{ steps.classify.outputs.previews }}
     steps:
       - name: Checkout v7
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - name: Classify paths with paths-filter v4
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d
-        id: filter
         with:
-          filters: |
-            previews:
-              - 'registry.json'
-              - 'registry/**'
-              - 'fixtures/cv/**'
-              - 'scripts/**'
-              - 'src/styles.css'
-              - 'public/previews/**'
-              - 'package.json'
-              - 'pnpm-lock.yaml'
-              - 'tsconfig.json'
-              - 'tsr.config.json'
-              - 'vite.config.ts'
-              - 'vitest.config.ts'
-              - '.github/workflows/**'
-              - '.github/actions/**'
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Node with action v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24.20.0
+      - name: Classify preview inputs
+        id: classify
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "${{ github.event_name }}" != 'pull_request' ]; then
+            echo 'previews=true' >> "$GITHUB_OUTPUT"
+          else
+            git diff --name-only "$BASE_SHA...$HEAD_SHA" | node scripts/preview-inputs.ts >> "$GITHUB_OUTPUT"
+          fi
 
   verify:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout v7
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - name: Set up pnpm with action v6
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
         with:
-          version: 11.24.0
-      - name: Set up Node with action v7
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
-        with:
-          node-version: 24.20.0
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+          persist-credentials: false
+      - name: Set up CV UI
+        uses: ./.github/actions/setup
       - run: pnpm run typecheck
       - run: pnpm run check
       - run: pnpm run test
@@ -66,16 +62,24 @@ jobs:
     steps:
       - name: Checkout v7
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - name: Set up pnpm with action v6
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
         with:
-          version: 11.24.0
-      - name: Set up Node with action v7
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+          persist-credentials: false
+      - name: Set up CV UI
+        uses: ./.github/actions/setup
+      - name: Resolve the pinned Playwright builds
+        id: playwright
+        run: |
+          echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+          builds=$(pnpm exec playwright install --dry-run chromium firefox webkit \
+            | grep -oE '\(playwright [a-z-]+ v[0-9]+\)' | sort -u | sha256sum | cut -c1-16)
+          echo "builds=$builds" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright downloads with cache v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
-          node-version: 24.20.0
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+          path: ~/.cache/ms-playwright
+          key: >-
+            ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}-${{
+            steps.playwright.outputs.version }}-${{ steps.playwright.outputs.builds }}
       - run: sudo apt-get update && sudo apt-get install --yes poppler-utils
       - run: pnpm exec playwright install --with-deps chromium firefox webkit
       - run: pnpm run previews:check
@@ -87,5 +91,5 @@ jobs:
         with:
           name: preview-failure-${{ github.sha }}
           path: ${{ runner.temp }}/cv-ui-preview-diagnostics
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 7

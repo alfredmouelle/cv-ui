@@ -1,0 +1,3 @@
+# One GitHub login per line. The trusted gate reads this file from the default
+# branch to decide who can accept a contribution.
+alfredmouelle

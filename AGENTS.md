@@ -12,6 +12,10 @@ Issues and specs live in GitHub Issues. See `docs/agents/issue-tracker.md`.
 
 Uses the default triage labels. See `docs/agents/triage-labels.md`.
 
+### CI
+
+The protected result and its trust boundary. See `docs/agents/ci.md`.
+
 ### Domain docs
 
 This is a single-context repo. See `docs/agents/domain.md`.
