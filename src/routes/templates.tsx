@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import type { TemplateCatalogEntry } from '~/lib/catalog/catalog-document'
@@ -180,9 +180,13 @@ function TemplateCard({ entry }: { readonly entry: TemplateCatalogEntry }) {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] lg:items-start">
         <div>
           <h2 className="font-heading font-medium text-2xl tracking-tight">
-            <a className="cursor-pointer hover:underline" href={`/templates/${entry.id}`}>
+            <Link
+              className="cursor-pointer hover:underline"
+              params={{ templateId: entry.id }}
+              to="/templates/$templateId"
+            >
               {entry.name}
-            </a>
+            </Link>
           </h2>
           <p className="mt-2 text-muted-foreground">{entry.summary}</p>
 
