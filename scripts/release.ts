@@ -33,7 +33,19 @@ type VerifyReleaseOptions = {
 type MediaType = ReleaseArtifactV1['mediaType']
 
 const RELEASE_SOURCE_PATHS = ['catalog', 'previews', 'r'] as const
-const REQUIRED_RELEASE_PATHS = ['catalog/templates.json', 'catalog/v1/templates.json'] as const
+const REQUIRED_RELEASE_PATHS = [
+  'catalog/templates.json',
+  'catalog/v1/templates.json',
+  'previews/clearline/pages/001.png',
+  'previews/clearline/pages/002.png',
+  'previews/clearline/reference.pdf',
+  'previews/signal-ledger/pages/001.png',
+  'previews/signal-ledger/pages/002.png',
+  'previews/signal-ledger/reference.pdf',
+  'r/clearline.json',
+  'r/cv-data.json',
+  'r/signal-ledger.json',
+] as const
 const RELEASE_MEDIA_TYPES = {
   json: 'application/json',
   pdf: 'application/pdf',
@@ -52,12 +64,10 @@ const publishedPattern = (pattern: string): RegExp => new RegExp(pattern, 'u')
 const releaseIdPattern = publishedPattern(manifestProperties.releaseId.pattern)
 const authoringReferencePattern =
   /^(https:\/\/cv-ui\.alfredmouelle\.com)?\/((?:catalog|previews|r)\/\S+)$/u
-const authoringOccurrencePattern =
-  /(?<![\w.-])(?:https:\/\/cv-ui\.alfredmouelle\.com)?\/(?:catalog|previews|r)\/[\w./-]+\.(?:json|pdf|png)/u
+const authoringOccurrencePattern = /\/(?:catalog|previews|r)\/[\w./-]+\.(?:json|pdf|png)/u
 const releaseOccurrencePattern =
   /(?<![\w.-])(?:https:\/\/cv-ui\.alfredmouelle\.com)?\/releases\/([0-9a-f]{40})\/((?:catalog|previews|r)\/[\w./-]+\.(?:json|pdf|png))/gu
-const anyReleaseOccurrencePattern =
-  /(?<![\w.-])(?:https:\/\/cv-ui\.alfredmouelle\.com)?\/releases\//u
+const anyReleaseOccurrencePattern = /\/releases\//u
 
 const releaseManifestSchema = v.strictObject({
   schemaVersion: v.literal('1.0'),
@@ -78,6 +88,9 @@ const releaseManifestSchema = v.strictObject({
     v.minLength(1),
   ),
 })
+
+export const parseReleaseManifest = (bytes: Buffer): ReleaseManifestV1 =>
+  v.parse(releaseManifestSchema, parseJsonBytes(bytes))
 
 const toPosixPath = (path: string): string => path.split(sep).join('/')
 const digest = (bytes: Buffer): string => createHash('sha256').update(bytes).digest('hex')
@@ -270,12 +283,10 @@ const assertManifestPaths = (artifacts: readonly ReleaseArtifactV1[]): void => {
 }
 
 const assertBundleInventory = (
-  bundleRoot: string,
+  presentPaths: Iterable<string>,
   artifacts: readonly ReleaseArtifactV1[],
 ): void => {
-  const present = new Set(
-    listFilePaths(bundleRoot).map((file) => toPosixPath(relative(bundleRoot, file))),
-  )
+  const present = new Set(presentPaths)
   const inventoried = new Set([...artifacts.map(({ path }) => path), 'manifest.json'])
   for (const path of present)
     if (!inventoried.has(path)) throw new Error(`Release file is not in the manifest: ${path}`)
@@ -283,25 +294,29 @@ const assertBundleInventory = (
     if (!present.has(path)) throw new Error(`Release file is missing: ${path}`)
 }
 
-export const verifyRelease = ({
+type VerifyReleaseFilesOptions = {
+  readonly releaseId: string
+  readonly files: ReadonlyMap<string, Buffer>
+}
+
+export const verifyReleaseFiles = ({
   releaseId,
-  publicRoot,
-}: VerifyReleaseOptions): ReleaseManifestV1 => {
+  files,
+}: VerifyReleaseFilesOptions): ReleaseManifestV1 => {
   assertReleaseId(releaseId)
-  const bundleRoot = join(publicRoot, 'releases', releaseId)
-  const manifest = v.parse(
-    releaseManifestSchema,
-    parseJsonBytes(readFileSync(join(bundleRoot, 'manifest.json'))),
-  )
+  const manifestBytes = files.get('manifest.json')
+  if (!manifestBytes) throw new Error(`Release manifest is missing: ${releaseId}`)
+  const manifest = parseReleaseManifest(manifestBytes)
   if (manifest.releaseId !== releaseId)
     throw new Error(`The manifest names another Release: ${manifest.releaseId}`)
   assertManifestPaths(manifest.artifacts)
-  assertBundleInventory(bundleRoot, manifest.artifacts)
+  assertBundleInventory(files.keys(), manifest.artifacts)
 
   const inventory = new Set(manifest.artifacts.map(({ path }) => path))
   assertRequiredPaths(inventory)
   for (const artifact of manifest.artifacts) {
-    const bytes = readFileSync(join(bundleRoot, artifact.path))
+    const bytes = files.get(artifact.path)
+    if (!bytes) throw new Error(`Release file is missing: ${artifact.path}`)
     if (bytes.byteLength !== artifact.size)
       throw new Error(`Release byte count does not match the manifest: ${artifact.path}`)
     if (digest(bytes) !== artifact.sha256)
@@ -313,6 +328,21 @@ export const verifyRelease = ({
       assertReferenceClosure(artifact.path, parseJsonBytes(bytes), releaseId, inventory)
   }
   return manifest
+}
+
+export const verifyRelease = ({
+  releaseId,
+  publicRoot,
+}: VerifyReleaseOptions): ReleaseManifestV1 => {
+  assertReleaseId(releaseId)
+  const bundleRoot = join(publicRoot, 'releases', releaseId)
+  const files = new Map(
+    listFilePaths(bundleRoot).map((file) => [
+      toPosixPath(relative(bundleRoot, file)),
+      readFileSync(file),
+    ]),
+  )
+  return verifyReleaseFiles({ releaseId, files })
 }
 
 const gitOutput = (...args: readonly string[]): string =>
