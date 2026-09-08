@@ -3,11 +3,26 @@ import { createMemoryHistory, createRouter, RouterProvider } from '@tanstack/rea
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { TEMPLATE_CATALOG } from '~/lib/catalog/catalog-document'
 import { parseRepeatedSearchString, stringifyRepeatedSearch } from '~/lib/search-params'
 import { routeTree } from '~/routeTree.gen'
 import clearlineRegistry from '../../public/r/clearline.json'
 
 vi.mock('~/components/devtools', () => ({ default: () => null }))
+vi.mock('../../registry.json', () => ({
+  default: {
+    removals: [
+      {
+        schemaVersion: '1.0',
+        templateId: 'retired-template',
+        status: 'removed',
+        reason: 'legal-risk',
+        removalDate: '2026-09-08',
+        replacementTemplateId: 'clearline',
+      },
+    ],
+  },
+}))
 vi.mock('./__root', async () => {
   const { createRootRoute } = await import('@tanstack/react-router')
 
@@ -96,6 +111,18 @@ describe('Template detail modes', () => {
     expect(await screen.findByRole('heading', { name: '404 - Not Found' })).toBeDefined()
   })
 
+  it('shows only safe tombstone facts for a removed Template ID', async () => {
+    await renderDetail('/templates/retired-template')
+
+    expect(screen.getByRole('heading', { level: 1, name: 'retired-template' })).toBeDefined()
+    expect(screen.getByText('removed')).toBeDefined()
+    expect(screen.getByText('Legal risk')).toBeDefined()
+    expect(screen.getByText('2026-09-08')).toBeDefined()
+    expect(screen.getByText('clearline')).toBeDefined()
+    expect(screen.queryByRole('button', { name: 'Install' })).toBeNull()
+    expect(screen.queryByRole('tab', { name: 'Preview' })).toBeNull()
+  })
+
   it('shows only the ordered English Reference Output in implicit Preview mode', async () => {
     await renderDetail('/templates/clearline?lang=fr&mode=preview')
 
@@ -154,6 +181,43 @@ describe('Template detail modes', () => {
     expect(screen.getByText('MIT')).toBeDefined()
     expect(screen.getByText('Two column')).toBeDefined()
     expect(screen.getByText('/r/signal-ledger.json')).toBeDefined()
+  })
+
+  it('preserves direct detail, install, PDF, and preview access for deprecation', async () => {
+    const entry = TEMPLATE_CATALOG.templates.find(({ id }) => id === 'clearline')
+    if (entry === undefined) throw new Error('Missing Clearline Catalog entry')
+    const originalStatus = entry.status
+    const originalDeprecation = 'deprecation' in entry ? entry.deprecation : undefined
+
+    Reflect.set(entry, 'status', 'deprecated')
+    Reflect.set(entry, 'deprecation', {
+      reason: 'Use Signal Ledger.',
+      date: '2026-09-08',
+      replacementTemplateId: 'signal-ledger',
+    })
+
+    try {
+      await renderDetail('/templates/clearline')
+
+      expect(screen.getByRole('heading', { level: 1, name: 'Clearline' })).toBeDefined()
+      expect(screen.getByRole('complementary', { name: 'Install Clearline' })).toBeDefined()
+      expect(screen.getByRole('link', { name: 'PDF' }).getAttribute('href')).toBe(
+        '/previews/clearline/reference.pdf',
+      )
+      expect(screen.getAllByRole('img').map((image) => image.getAttribute('src'))).toEqual([
+        '/previews/clearline/pages/001.png',
+        '/previews/clearline/pages/002.png',
+      ])
+
+      fireEvent.click(screen.getByRole('tab', { name: 'Info' }))
+      expect(await screen.findByText('Use Signal Ledger.')).toBeDefined()
+      expect(screen.getByText('2026-09-08')).toBeDefined()
+      expect(screen.getByText('signal-ledger')).toBeDefined()
+    } finally {
+      Reflect.set(entry, 'status', originalStatus)
+      if (originalDeprecation === undefined) Reflect.deleteProperty(entry, 'deprecation')
+      else Reflect.set(entry, 'deprecation', originalDeprecation)
+    }
   })
 })
 

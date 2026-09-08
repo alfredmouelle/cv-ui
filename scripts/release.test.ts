@@ -63,6 +63,26 @@ const replaceArtifact = (bundleRoot: string, path: string, bytes: Buffer): void 
   })
 }
 
+const removeTemplateFromCatalogs = (sourceRoot: string, templateId: string): void => {
+  for (const catalogPath of ['catalog/templates.json', 'catalog/v1/templates.json']) {
+    const path = join(sourceRoot, catalogPath)
+    const document: unknown = JSON.parse(readFileSync(path, 'utf8'))
+    if (document === null || typeof document !== 'object') throw new Error('Invalid test Catalog')
+    const templates = Reflect.get(document, 'templates')
+    if (!Array.isArray(templates)) throw new Error('Invalid test Catalog entries')
+    writeFileSync(
+      path,
+      serializeJson({
+        ...document,
+        templates: templates.filter(
+          (entry) =>
+            entry === null || typeof entry !== 'object' || Reflect.get(entry, 'id') !== templateId,
+        ),
+      }),
+    )
+  }
+}
+
 describe('Release assembly', () => {
   it('inventories every required artifact and excludes schemas and the manifest', () => {
     const { bundleRoot } = assembleCanonicalRelease()
@@ -104,6 +124,52 @@ describe('Release assembly', () => {
     expect(listFilePaths(bundleRoot).map((file) => relative(bundleRoot, file))).toEqual(
       [...manifest.artifacts.map(({ path }) => path), 'manifest.json'].sort(),
     )
+  })
+
+  it('inventories a tombstone instead of removed-template bytes', () => {
+    const sourceRoot = copyCanonicalTree()
+    const tombstone = {
+      schemaVersion: '1.0',
+      templateId: 'clearline',
+      status: 'removed',
+      reason: 'redistribution-unavailable',
+      removalDate: '2026-09-08',
+      replacementTemplateId: 'signal-ledger',
+    }
+    writeFileSync(join(sourceRoot, 'r/clearline.json'), serializeJson(tombstone))
+    removeTemplateFromCatalogs(sourceRoot, 'clearline')
+
+    const outputRoot = temporaryRoot('release-output')
+    const manifest = assembleRelease({ releaseId, sourceRoot, outputRoot })
+
+    expect(manifest.artifacts.map(({ path }) => path)).toContain('r/clearline.json')
+    expect(manifest.artifacts.map(({ path }) => path)).not.toContain(
+      'previews/clearline/reference.pdf',
+    )
+    expect(
+      JSON.parse(readFileSync(join(outputRoot, 'releases', releaseId, 'r/clearline.json'), 'utf8')),
+    ).toEqual(tombstone)
+    expect(() => verifyRelease({ releaseId, publicRoot: outputRoot })).not.toThrow()
+  })
+
+  it('rejects a tombstone replacement that is not active in the same Release', () => {
+    const sourceRoot = copyCanonicalTree()
+    writeFileSync(
+      join(sourceRoot, 'r/clearline.json'),
+      serializeJson({
+        schemaVersion: '1.0',
+        templateId: 'clearline',
+        status: 'removed',
+        reason: 'legal-risk',
+        removalDate: '2026-09-08',
+        replacementTemplateId: 'missing-template',
+      }),
+    )
+    removeTemplateFromCatalogs(sourceRoot, 'clearline')
+
+    expect(() =>
+      assembleRelease({ releaseId, sourceRoot, outputRoot: temporaryRoot('release-output') }),
+    ).toThrow(/active replacement/u)
   })
 
   it('rewrites every artifact reference to one Release prefix', () => {

@@ -10,6 +10,7 @@ import {
   serveStableAlias,
   type VerificationCommand,
 } from './promotion'
+import { parseReleaseManifest } from './release'
 
 const firstReleaseId = '4f9a1c2d3e5b6a7c8d9e0f1a2b3c4d5e6f708192'
 const secondReleaseId = '0192837465fedcba0192837465fedcba01928374'
@@ -52,6 +53,40 @@ const releaseBundle = (
     ...artifacts.map(([path, , bytes]) => [path, bytes] as const),
     ['manifest.json', manifestBytes],
   ])
+}
+
+const removedReleaseBundle = (
+  releaseId: string,
+  templateId: 'clearline' | 'signal-ledger',
+): ReadonlyMap<string, Buffer> => {
+  const files = new Map(releaseBundle(releaseId))
+  const tombstone = Buffer.from(
+    `${JSON.stringify({
+      schemaVersion: '1.0',
+      templateId,
+      status: 'removed',
+      reason: 'security-risk',
+      removalDate: '2026-09-08',
+    })}\n`,
+  )
+  const manifestBytes = files.get('manifest.json')
+  if (!manifestBytes) throw new Error('Missing test manifest')
+  const manifest = parseReleaseManifest(manifestBytes)
+  const nextManifest = {
+    ...manifest,
+    artifacts: manifest.artifacts
+      .filter((artifact) => !artifact.path.startsWith(`previews/${templateId}/`))
+      .map((artifact) =>
+        artifact.path === `r/${templateId}.json`
+          ? { ...artifact, size: tombstone.byteLength, sha256: digest(tombstone) }
+          : artifact,
+      ),
+  }
+  for (const path of files.keys())
+    if (path.startsWith(`previews/${templateId}/`)) files.delete(path)
+  files.set(`r/${templateId}.json`, tombstone)
+  files.set('manifest.json', Buffer.from(`${JSON.stringify(nextManifest)}\n`))
+  return files
 }
 
 class FakePromotionAdapters implements PromotionAdapters {
@@ -234,6 +269,95 @@ describe('Release promotion', () => {
     expect(immutable.headers).toEqual({
       'Cache-Control': 'public, max-age=31536000, immutable',
     })
+  })
+
+  it('returns a Current Release tombstone from its alias with 410 and release headers', async () => {
+    const adapters = new FakePromotionAdapters()
+    const removedFiles = removedReleaseBundle(firstReleaseId, 'clearline')
+    const tombstone = removedFiles.get('r/clearline.json')
+    if (!tombstone) throw new Error('Missing test tombstone')
+
+    await new PromotionCoordinator(adapters).promote({
+      releaseId: firstReleaseId,
+      expectedPreviousReleaseId: undefined,
+      files: removedFiles,
+    })
+
+    const response = await serveStableAlias(adapters, 'r/clearline.json')
+    const immutable = await serveImmutableRelease(adapters, firstReleaseId, 'r/clearline.json')
+
+    expect(response.status).toBe(410)
+    expect(response.body).toEqual(tombstone)
+    expect(response.headers).toEqual({
+      'Cache-Control': 'public, max-age=0, must-revalidate',
+      ETag: `"${digest(tombstone)}"`,
+      'X-CV-UI-Release': firstReleaseId,
+    })
+    expect(immutable).toEqual({
+      status: 200,
+      body: tombstone,
+      headers: { 'Cache-Control': 'public, max-age=31536000, immutable' },
+    })
+  })
+
+  it('suppresses only removed-template artifacts from historical Releases', async () => {
+    const adapters = new FakePromotionAdapters()
+    const coordinator = new PromotionCoordinator(adapters)
+    await coordinator.promote({
+      releaseId: firstReleaseId,
+      expectedPreviousReleaseId: undefined,
+      files: releaseBundle(firstReleaseId),
+    })
+    await coordinator.promote({
+      releaseId: secondReleaseId,
+      expectedPreviousReleaseId: firstReleaseId,
+      files: removedReleaseBundle(secondReleaseId, 'clearline'),
+    })
+
+    const oldRegistry = await serveImmutableRelease(adapters, firstReleaseId, 'r/clearline.json')
+    const oldPreview = await serveImmutableRelease(
+      adapters,
+      firstReleaseId,
+      'previews/clearline/pages/001.png',
+    )
+    const unrelated = await serveImmutableRelease(adapters, firstReleaseId, 'r/signal-ledger.json')
+    const oldManifest = await serveImmutableRelease(adapters, firstReleaseId, 'manifest.json')
+
+    expect(oldRegistry.status).toBe(410)
+    expect(oldPreview.status).toBe(410)
+    expect(oldRegistry.headers).toEqual({
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    })
+    expect(oldPreview.headers).toEqual({
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    })
+    expect(JSON.parse(oldRegistry.body.toString())).toMatchObject({
+      templateId: 'clearline',
+      status: 'removed',
+    })
+    expect(unrelated.status).toBe(200)
+    expect(oldManifest.status).toBe(200)
+  })
+
+  it('retains tombstones and never reuses a removed Template ID', async () => {
+    const adapters = new FakePromotionAdapters()
+    const coordinator = new PromotionCoordinator(adapters)
+    await coordinator.promote({
+      releaseId: firstReleaseId,
+      expectedPreviousReleaseId: undefined,
+      files: removedReleaseBundle(firstReleaseId, 'clearline'),
+    })
+    adapters.events.length = 0
+
+    await expect(
+      coordinator.promote({
+        releaseId: secondReleaseId,
+        expectedPreviousReleaseId: firstReleaseId,
+        files: releaseBundle(secondReleaseId),
+      }),
+    ).rejects.toThrow(/cannot be reused/u)
+    expect(adapters.events).toEqual([])
+    expect(adapters.pointer?.currentReleaseId).toBe(firstReleaseId)
   })
 
   it('serializes concurrent promotions and ignores cancellation after upload starts', async () => {

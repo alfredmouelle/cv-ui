@@ -64,7 +64,11 @@ export const Route = createFileRoute('/templates_/$templateId')({
   component: TemplateDetailPage,
   head: ({ params }) => {
     const detail = getTemplateDetail(params.templateId)
-    return { meta: [{ title: `${detail?.entry.name ?? 'Template'} · ${siteConfig.name}` }] }
+    const name =
+      detail?.kind === 'available'
+        ? detail.entry.name
+        : (detail?.tombstone.templateId ?? 'Template')
+    return { meta: [{ title: `${name} · ${siteConfig.name}` }] }
   },
   validateSearch: validateTemplateDetailSearch,
 })
@@ -76,6 +80,7 @@ export function TemplateDetailPage() {
   const detail = getTemplateDetail(templateId)
 
   if (detail === undefined) throw notFound()
+  if (detail.kind === 'removed') return <RemovedTemplatePage tombstone={detail.tombstone} />
 
   const mode = search.mode ?? 'preview'
   const [firstFile] = detail.files
@@ -156,7 +161,10 @@ export function TemplateDetailPage() {
 function Preview({
   entry,
 }: {
-  readonly entry: NonNullable<ReturnType<typeof getTemplateDetail>>['entry']
+  readonly entry: Extract<
+    NonNullable<ReturnType<typeof getTemplateDetail>>,
+    { kind: 'available' }
+  >['entry']
 }) {
   return (
     <div>
@@ -248,8 +256,21 @@ function SourceViewer({
 function TemplateInfo({
   entry,
 }: {
-  readonly entry: NonNullable<ReturnType<typeof getTemplateDetail>>['entry']
+  readonly entry: Extract<
+    NonNullable<ReturnType<typeof getTemplateDetail>>,
+    { kind: 'available' }
+  >['entry']
 }) {
+  const deprecationFacts =
+    entry.status === 'deprecated'
+      ? [
+          ['Deprecation reason', entry.deprecation.reason],
+          ['Deprecation date', entry.deprecation.date],
+          ...(entry.deprecation.replacementTemplateId
+            ? [['Replacement Template ID', entry.deprecation.replacementTemplateId]]
+            : []),
+        ]
+      : []
   const facts = [
     ['Author', entry.author],
     ['License', entry.license],
@@ -261,6 +282,7 @@ function TemplateInfo({
     ['Density', CATALOG_TRAIT_LABELS[entry.traits.density]],
     ['Photo', CATALOG_TRAIT_LABELS[entry.traits.photoSupport]],
     ['Status', entry.status],
+    ...deprecationFacts,
   ] as const
 
   return (
@@ -275,6 +297,56 @@ function TemplateInfo({
         ))}
       </dl>
     </div>
+  )
+}
+
+const REMOVAL_REASON_LABELS = {
+  'legal-risk': 'Legal risk',
+  'security-risk': 'Security risk',
+  'redistribution-unavailable': 'Artifact redistribution unavailable',
+} as const
+
+function RemovedTemplatePage({
+  tombstone,
+}: {
+  readonly tombstone: Extract<
+    NonNullable<ReturnType<typeof getTemplateDetail>>,
+    { kind: 'removed' }
+  >['tombstone']
+}) {
+  const facts = [
+    ['Template ID', tombstone.templateId],
+    ['Status', tombstone.status],
+    ['Reason', REMOVAL_REASON_LABELS[tombstone.reason]],
+    ['Removal date', tombstone.removalDate],
+    ...(tombstone.replacementTemplateId
+      ? ([['Replacement Template ID', tombstone.replacementTemplateId]] as const)
+      : []),
+  ] as const
+
+  return (
+    <main className="min-h-svh bg-background">
+      <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+        <Link
+          className="cursor-pointer text-muted-foreground text-sm hover:text-foreground"
+          to="/templates"
+        >
+          Template Catalog
+        </Link>
+        <h1 className="mt-4 font-heading font-medium text-4xl tracking-[-0.04em]">
+          {tombstone.templateId}
+        </h1>
+        <p className="mt-3 text-muted-foreground">This CV Template was removed.</p>
+        <dl className="mt-8 divide-y divide-border rounded-xl border border-border bg-card px-5">
+          {facts.map(([label, value]) => (
+            <div className="grid gap-1 py-4 sm:grid-cols-[12rem_1fr]" key={label}>
+              <dt className="text-muted-foreground text-sm">{label}</dt>
+              <dd className="break-all font-medium text-sm">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </main>
   )
 }
 
