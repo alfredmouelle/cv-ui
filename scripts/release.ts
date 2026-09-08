@@ -18,6 +18,7 @@ import {
   type ReleaseArtifactV1,
   type ReleaseManifestV1,
 } from '../contracts/catalog.ts'
+import { tryParseRemovalTombstoneJsonV1 } from '../contracts/compatibility.ts'
 import { listFilePaths } from './file-drift.ts'
 import { checkGeneratedArtifacts, serializeJson } from './generate.ts'
 
@@ -36,15 +37,7 @@ const RELEASE_SOURCE_PATHS = ['catalog', 'previews', 'r'] as const
 const REQUIRED_RELEASE_PATHS = [
   'catalog/templates.json',
   'catalog/v1/templates.json',
-  'previews/clearline/pages/001.png',
-  'previews/clearline/pages/002.png',
-  'previews/clearline/reference.pdf',
-  'previews/signal-ledger/pages/001.png',
-  'previews/signal-ledger/pages/002.png',
-  'previews/signal-ledger/reference.pdf',
-  'r/clearline.json',
   'r/cv-data.json',
-  'r/signal-ledger.json',
 ] as const
 const RELEASE_MEDIA_TYPES = {
   json: 'application/json',
@@ -125,6 +118,91 @@ const mapJsonStrings = (value: unknown, map: (text: string) => string): unknown 
 
 const parseJsonBytes = (bytes: Buffer): unknown => JSON.parse(bytes.toString('utf8'))
 
+const parseTombstone = (bytes: Buffer): ReturnType<typeof tryParseRemovalTombstoneJsonV1> =>
+  tryParseRemovalTombstoneJsonV1(bytes.toString('utf8'))
+
+const pathFromPublishedReference = (value: unknown, releaseId?: string): string | undefined => {
+  if (typeof value !== 'string') return undefined
+  const prefix = releaseId ? `/releases/${releaseId}/` : '/'
+  const absolutePrefix = `https://cv-ui.alfredmouelle.com${prefix}`
+  if (value.startsWith(absolutePrefix)) return value.slice(absolutePrefix.length)
+  if (value.startsWith(prefix)) return value.slice(prefix.length)
+  return undefined
+}
+
+const catalogRequiredPaths = (bytes: Buffer, releaseId?: string): readonly string[] => {
+  const document = parseJsonBytes(bytes)
+  if (document === null || typeof document !== 'object') return []
+  const templates = Reflect.get(document, 'templates')
+  if (!Array.isArray(templates)) return []
+
+  return templates.flatMap((entry) => {
+    if (entry === null || typeof entry !== 'object') return []
+    const preview = Reflect.get(entry, 'preview')
+    const registryPath = pathFromPublishedReference(Reflect.get(entry, 'registryUrl'), releaseId)
+    if (preview === null || typeof preview !== 'object') return registryPath ? [registryPath] : []
+    const pdfPath = pathFromPublishedReference(Reflect.get(preview, 'pdf'), releaseId)
+    const pages = Reflect.get(preview, 'pages')
+    const pagePaths = Array.isArray(pages)
+      ? pages.flatMap((page) => {
+          if (page === null || typeof page !== 'object') return []
+          const path = pathFromPublishedReference(Reflect.get(page, 'src'), releaseId)
+          return path ? [path] : []
+        })
+      : []
+    return [registryPath, pdfPath, ...pagePaths].filter(
+      (path): path is string => path !== undefined,
+    )
+  })
+}
+
+const catalogTemplateStatuses = (bytes: Buffer): ReadonlyMap<string, string> => {
+  const document = parseJsonBytes(bytes)
+  if (document === null || typeof document !== 'object') return new Map()
+  const templates = Reflect.get(document, 'templates')
+  if (!Array.isArray(templates)) return new Map()
+  return new Map(
+    templates.flatMap((entry) => {
+      if (entry === null || typeof entry !== 'object') return []
+      const id = Reflect.get(entry, 'id')
+      const status = Reflect.get(entry, 'status')
+      return typeof id === 'string' && typeof status === 'string' ? [[id, status] as const] : []
+    }),
+  )
+}
+
+const assertTombstoneReleaseState = (
+  tombstone: NonNullable<ReturnType<typeof parseTombstone>>,
+  path: string,
+  catalogs: readonly ReadonlyMap<string, string>[],
+  artifactPaths: Iterable<string>,
+): void => {
+  if (path !== `r/${tombstone.templateId}.json`)
+    throw new Error(`Removal tombstone path does not match its Template ID: ${path}`)
+  if (catalogs.some((catalog) => catalog.has(tombstone.templateId)))
+    throw new Error(`Removed Template remains in the Catalog: ${tombstone.templateId}`)
+  const replacementId = tombstone.replacementTemplateId
+  if (replacementId && catalogs.some((catalog) => catalog.get(replacementId) !== 'active'))
+    throw new Error(`Removed Template does not name an active replacement: ${tombstone.templateId}`)
+  for (const artifactPath of artifactPaths)
+    if (artifactPath.startsWith(`previews/${tombstone.templateId}/`))
+      throw new Error(`Removed Template artifact remains in the Release: ${artifactPath}`)
+}
+
+const assertRemovalState = (artifacts: ReadonlyMap<string, Buffer>): void => {
+  const catalogBytes = [
+    artifacts.get('catalog/templates.json'),
+    artifacts.get('catalog/v1/templates.json'),
+  ].filter((bytes): bytes is Buffer => bytes !== undefined)
+  const catalogs = catalogBytes.map(catalogTemplateStatuses)
+  for (const [path, bytes] of artifacts) {
+    if (!path.startsWith('r/')) continue
+    const tombstone = parseTombstone(bytes)
+    if (!tombstone) continue
+    assertTombstoneReleaseState(tombstone, path, catalogs, artifacts.keys())
+  }
+}
+
 const qualifyReference =
   (releaseId: string) =>
   (text: string): string => {
@@ -168,8 +246,16 @@ const assertMediaTypeBytes = (path: string, mediaType: MediaType, bytes: Buffer)
     throw new Error(`Release bytes do not match the media type: ${path}`)
 }
 
-const assertRequiredPaths = (inventory: ReadonlySet<string>): void => {
+const assertRequiredPaths = (
+  inventory: ReadonlySet<string>,
+  artifacts: ReadonlyMap<string, Buffer>,
+  releaseId?: string,
+): void => {
   for (const path of REQUIRED_RELEASE_PATHS)
+    if (!inventory.has(path)) throw new Error(`Release file is missing: ${path}`)
+  const catalog = artifacts.get('catalog/templates.json')
+  if (!catalog) return
+  for (const path of catalogRequiredPaths(catalog, releaseId))
     if (!inventory.has(path)) throw new Error(`Release file is missing: ${path}`)
 }
 
@@ -188,8 +274,19 @@ const readSourceArtifacts = (sourceRoot: string): Map<string, Buffer> => {
 
 const buildReleaseArtifacts = (releaseId: string, sourceRoot: string): Map<string, Buffer> => {
   const qualify = qualifyReference(releaseId)
+  const sourceArtifacts = readSourceArtifacts(sourceRoot)
+  const removedTemplateIds = [...sourceArtifacts]
+    .filter(([path]) => path.startsWith('r/'))
+    .flatMap(([, bytes]) => {
+      const tombstone = parseTombstone(bytes)
+      return tombstone ? [tombstone.templateId] : []
+    })
+  for (const templateId of removedTemplateIds)
+    for (const path of sourceArtifacts.keys())
+      if (path.startsWith(`previews/${templateId}/`)) sourceArtifacts.delete(path)
+
   const artifacts = new Map(
-    [...readSourceArtifacts(sourceRoot)].map(([path, bytes]) => [
+    [...sourceArtifacts].map(([path, bytes]) => [
       path,
       mediaTypeOf(path) === 'application/json'
         ? Buffer.from(serializeJson(mapJsonStrings(parseJsonBytes(bytes), qualify)))
@@ -197,7 +294,8 @@ const buildReleaseArtifacts = (releaseId: string, sourceRoot: string): Map<strin
     ]),
   )
   const inventory = new Set(artifacts.keys())
-  assertRequiredPaths(inventory)
+  assertRequiredPaths(inventory, artifacts, releaseId)
+  assertRemovalState(artifacts)
   for (const [path, bytes] of artifacts)
     if (mediaTypeOf(path) === 'application/json')
       assertReferenceClosure(path, parseJsonBytes(bytes), releaseId, inventory)
@@ -313,7 +411,8 @@ export const verifyReleaseFiles = ({
   assertBundleInventory(files.keys(), manifest.artifacts)
 
   const inventory = new Set(manifest.artifacts.map(({ path }) => path))
-  assertRequiredPaths(inventory)
+  assertRequiredPaths(inventory, files, releaseId)
+  assertRemovalState(files)
   for (const artifact of manifest.artifacts) {
     const bytes = files.get(artifact.path)
     if (!bytes) throw new Error(`Release file is missing: ${artifact.path}`)

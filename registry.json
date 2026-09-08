@@ -2,6 +2,7 @@
   "$schema": "https://ui.shadcn.com/schema/registry.json",
   "name": "cv-ui",
   "homepage": "https://cv-ui.alfredmouelle.com",
+  "removals": [],
   "items": [
     {
       "name": "cv-data",

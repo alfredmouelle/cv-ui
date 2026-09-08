@@ -1,5 +1,7 @@
+import { parseRemovalTombstoneV1, type RemovalTombstoneV1 } from '../../../contracts/compatibility'
 import clearlineRegistry from '../../../public/r/clearline.json'
 import signalLedgerRegistry from '../../../public/r/signal-ledger.json'
+import registry from '../../../registry.json'
 import { TEMPLATE_CATALOG, type TemplateCatalogEntry } from './catalog-document'
 
 type RegistryFile = {
@@ -21,15 +23,47 @@ export type TemplateSourceFile = {
   readonly type: 'component' | 'css' | 'example'
 }
 
-export type TemplateDetail = {
+export type AvailableTemplateDetail = {
+  readonly kind: 'available'
   readonly entry: TemplateCatalogEntry
   readonly files: readonly [TemplateSourceFile, TemplateSourceFile, TemplateSourceFile]
 }
+export type RemovedTemplateDetail = {
+  readonly kind: 'removed'
+  readonly tombstone: RemovalTombstoneV1
+}
+export type TemplateDetail = AvailableTemplateDetail | RemovedTemplateDetail
 
-const registryDocuments = [
-  clearlineRegistry,
-  signalLedgerRegistry,
-] satisfies readonly RegistryDocument[]
+const parseRegistryFile = (value: unknown): RegistryFile | undefined => {
+  if (value === null || typeof value !== 'object') return undefined
+  const path = Reflect.get(value, 'path')
+  const type = Reflect.get(value, 'type')
+  const target = Reflect.get(value, 'target')
+  const content = Reflect.get(value, 'content')
+  if (
+    typeof path !== 'string' ||
+    typeof type !== 'string' ||
+    typeof target !== 'string' ||
+    typeof content !== 'string'
+  )
+    return undefined
+  return { path, type, target, content }
+}
+
+const parseRegistryDocument = (value: unknown): RegistryDocument | undefined => {
+  if (value === null || typeof value !== 'object') return undefined
+  const name = Reflect.get(value, 'name')
+  const files = Reflect.get(value, 'files')
+  if (typeof name !== 'string' || !Array.isArray(files)) return undefined
+  const parsedFiles = files.map(parseRegistryFile)
+  if (parsedFiles.some((file) => file === undefined)) return undefined
+  return { name, files: parsedFiles.filter((file) => file !== undefined) }
+}
+
+const registryDocuments = [clearlineRegistry, signalLedgerRegistry].flatMap((document) => {
+  const parsed = parseRegistryDocument(document)
+  return parsed ? [parsed] : []
+})
 
 const sourceFileType = (file: RegistryFile): TemplateSourceFile['type'] | undefined => {
   if (file.type === 'registry:component') return 'component'
@@ -60,10 +94,18 @@ const readSourceFiles = (
   return [component, css, example]
 }
 
-export function getTemplateDetail(templateId: string): TemplateDetail | undefined {
+export function getTemplateDetail(
+  templateId: string,
+  removalInputs: readonly unknown[] = registry.removals,
+): TemplateDetail | undefined {
   const entry = TEMPLATE_CATALOG.templates.find((candidate) => candidate.id === templateId)
   const document = registryDocuments.find((candidate) => candidate.name === templateId)
 
-  if (entry === undefined || document === undefined) return undefined
-  return { entry, files: readSourceFiles(document) }
+  if (entry !== undefined && document !== undefined)
+    return { kind: 'available', entry, files: readSourceFiles(document) }
+
+  const tombstone = removalInputs
+    .map((removal) => parseRemovalTombstoneV1(removal))
+    .find((removal) => removal.templateId === templateId)
+  return tombstone ? { kind: 'removed', tombstone } : undefined
 }

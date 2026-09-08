@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, relative, resolve } from 'node:path'
+import { basename, dirname, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import * as v from 'valibot'
 
@@ -22,7 +22,15 @@ import {
   REMOVAL_TOMBSTONE_V1_SCHEMA,
   TEMPLATE_CATALOG_V1_SCHEMA,
 } from '../contracts/catalog.ts'
-import { CV_DATA_V1_SCHEMA, CV_FIDELITY_ENVELOPE_V1_SCHEMA } from '../registry/cv-data/cv-data.ts'
+import {
+  tryParseRemovalTombstoneJsonV1,
+  validateTemplateLifecycle,
+} from '../contracts/compatibility.ts'
+import {
+  CV_DATA_V1_SCHEMA,
+  CV_FIDELITY_ENVELOPE_V1_SCHEMA,
+  validateCvDataV1,
+} from '../registry/cv-data/cv-data.ts'
 import { findFileDrift, listFilePaths } from './file-drift.ts'
 import { findProvenanceFailures } from './provenance.ts'
 
@@ -101,6 +109,7 @@ const registrySchema = v.strictObject({
   $schema: v.string(),
   name: v.string(),
   homepage: v.string(),
+  removals: v.array(v.unknown()),
   items: v.array(registryItemSchema),
 })
 type Registry = v.InferOutput<typeof registrySchema>
@@ -163,6 +172,133 @@ const readRegistry = (): Registry => {
   return v.parse(registrySchema, value)
 }
 
+const compatibilityTemplateSchema = v.strictObject({
+  id: v.string(),
+  title: v.string(),
+  description: v.string(),
+  author: v.string(),
+  registryType: v.string(),
+  export: v.string(),
+  prop: v.string(),
+  exportSignature: v.string(),
+  traits: traitsSchema,
+  installedPaths: v.array(v.string()),
+  sourceFiles: v.array(registryFileSchema),
+  dependencies: stringArraySchema,
+  devDependencies: stringArraySchema,
+  registryDependencies: stringArraySchema,
+  supportedCvDataMajors: v.array(v.string()),
+  metaSchemaVersion: v.string(),
+  license: v.string(),
+  previewPdf: v.string(),
+  previewPages: v.array(v.string()),
+  registryPath: v.string(),
+})
+const compatibilityFixtureSchema = v.strictObject({
+  schemaVersion: v.literal('1.0'),
+  cvDataMajors: v.array(
+    v.strictObject({
+      major: v.string(),
+      schemaPath: v.string(),
+      fixturePaths: v.array(v.string()),
+    }),
+  ),
+  cvDataMigrations: v.array(
+    v.strictObject({ fromMajor: v.string(), toMajor: v.string(), name: v.string() }),
+  ),
+  catalogMajors: v.array(v.strictObject({ major: v.string(), path: v.string() })),
+  registrySchemaMajors: v.array(v.strictObject({ major: v.string(), paths: v.array(v.string()) })),
+  templateIds: v.array(compatibilityTemplateSchema),
+})
+type CompatibilityFixture = v.InferOutput<typeof compatibilityFixtureSchema>
+
+const readCompatibilityFixture = (): CompatibilityFixture =>
+  v.parse(
+    compatibilityFixtureSchema,
+    readJson(join(repositoryRoot, 'fixtures/compatibility/published-v1.json')),
+  )
+
+const validateCvDataCompatibilityPaths = (
+  cvDataMajors: CompatibilityFixture['cvDataMajors'],
+): void => {
+  for (const cvData of cvDataMajors) {
+    if (!existsSync(join(repositoryRoot, cvData.schemaPath)))
+      throw new Error(`Published CV Data schema is missing: ${cvData.schemaPath}`)
+    for (const fixturePath of cvData.fixturePaths) {
+      const fixture = readJson(join(repositoryRoot, fixturePath))
+      if (cvData.major === '1' && !validateCvDataV1(fixture).success)
+        throw new Error(`Published CV Data fixture is invalid: ${fixturePath}`)
+    }
+  }
+}
+
+const validateCvDataMigrationInventory = (compatibility: CompatibilityFixture): void => {
+  const expected = compatibility.cvDataMajors.slice(1).map((current, index) => {
+    const previous = compatibility.cvDataMajors[index]
+    if (!previous) throw new Error('CV Data compatibility majors are not adjacent')
+    if (Number(current.major) !== Number(previous.major) + 1)
+      throw new Error('CV Data compatibility majors are not adjacent')
+    return {
+      fromMajor: previous.major,
+      toMajor: current.major,
+      name: `migrateCvDataV${previous.major}ToV${current.major}`,
+    }
+  })
+  if (serializeJson(compatibility.cvDataMigrations) !== serializeJson(expected))
+    throw new Error('CV Data adjacent migration inventory is incomplete')
+}
+
+const validateCatalogCompatibilityPaths = (
+  catalogMajors: CompatibilityFixture['catalogMajors'],
+): void => {
+  for (const catalog of catalogMajors) {
+    const document = readJson(join(repositoryRoot, catalog.path))
+    if (
+      document === null ||
+      typeof document !== 'object' ||
+      !String(Reflect.get(document, 'schemaVersion')).startsWith(`${catalog.major}.`)
+    )
+      throw new Error(`Published Catalog fixture is invalid: ${catalog.path}`)
+  }
+}
+
+const validateRegistryCompatibilityPaths = (
+  registrySchemaMajors: CompatibilityFixture['registrySchemaMajors'],
+): void => {
+  for (const registrySchema of registrySchemaMajors)
+    for (const path of registrySchema.paths) {
+      const text = readFileSync(join(repositoryRoot, path), 'utf8')
+      const document: unknown = JSON.parse(text)
+      const tombstone = tryParseRemovalTombstoneJsonV1(text)
+      const isRegistryItem =
+        document !== null &&
+        typeof document === 'object' &&
+        Reflect.get(document, '$schema') === 'https://ui.shadcn.com/schema/registry-item.json'
+      const isMatchingTombstone = tombstone?.templateId === basename(path, '.json')
+      if (registrySchema.major !== '1' || (!isRegistryItem && !isMatchingTombstone))
+        throw new Error(`Published registry fixture is invalid: ${path}`)
+    }
+}
+
+const validateCompatibilityPaths = (compatibility: CompatibilityFixture): void => {
+  validateCvDataCompatibilityPaths(compatibility.cvDataMajors)
+  validateCvDataMigrationInventory(compatibility)
+  validateCatalogCompatibilityPaths(compatibility.catalogMajors)
+  validateRegistryCompatibilityPaths(compatibility.registrySchemaMajors)
+}
+
+const validateRegistryLifecycle = (
+  registry: Registry,
+  compatibility: CompatibilityFixture,
+): ReturnType<typeof validateTemplateLifecycle> =>
+  validateTemplateLifecycle({
+    permanentTemplateIds: compatibility.templateIds.map(({ id }) => id),
+    removals: registry.removals,
+    templates: registry.items.flatMap((item) =>
+      item.meta === undefined ? [] : [{ id: item.name, meta: item.meta.cvUi }],
+    ),
+  })
+
 const validateTemplateProvenance = (templateId: string): void => {
   const templateRoot = join(repositoryRoot, `registry/${templateId}`)
   const listRelativePaths = (directory: string): string[] =>
@@ -178,7 +314,7 @@ const validateTemplateProvenance = (templateId: string): void => {
 }
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Validation keeps all root registry invariants together.
-const validateRegistry = (registry: Registry): void => {
+const validateRegistry = (registry: Registry, compatibility: CompatibilityFixture): void => {
   const names = new Set<string>()
   const catalogOrders = new Set<number>()
   for (const item of registry.items) {
@@ -201,25 +337,7 @@ const validateRegistry = (registry: Registry): void => {
     catalogOrders.add(catalogOrder)
   }
 
-  const clearline = registry.items.find(({ name }) => name === 'clearline')
-  if (!clearline?.meta?.cvUi) throw new Error('Clearline metadata is missing')
-  if (
-    clearline.title !== 'Clearline' ||
-    clearline.description !==
-      'A one-column ATS-oriented CV with restrained blue rules and one linear reading order.' ||
-    clearline.author !== 'Alfred Mouelle'
-  )
-    throw new Error('Clearline canonical metadata does not match the V1 contract')
-  const signalLedger = registry.items.find(({ name }) => name === 'signal-ledger')
-  if (!signalLedger?.meta?.cvUi) throw new Error('Signal Ledger metadata is missing')
-  if (
-    signalLedger.title !== 'Signal Ledger' ||
-    signalLedger.description !==
-      'A visual two-column CV with paired rows and a bold ledger-inspired header.' ||
-    signalLedger.author !== 'Alfred Mouelle'
-  )
-    throw new Error('Signal Ledger canonical metadata does not match the V1 contract')
-  for (const item of [clearline, signalLedger]) {
+  for (const item of registry.items.filter((candidate) => candidate.meta !== undefined)) {
     if (
       item.dependencies.length > 0 ||
       item.devDependencies.length > 0 ||
@@ -229,6 +347,44 @@ const validateRegistry = (registry: Registry): void => {
       throw new Error(`Invalid ${item.title} dependencies`)
   }
   for (const item of registry.items) if (item.meta) validateTemplateProvenance(item.name)
+
+  validateRegistryLifecycle(registry, compatibility)
+
+  for (const published of compatibility.templateIds) {
+    const item = registry.items.find(({ name }) => name === published.id)
+    if (!item) continue
+    if (!item.meta) throw new Error(`Published Template metadata is missing: ${published.id}`)
+    if (
+      item.title !== published.title ||
+      item.description !== published.description ||
+      item.author !== published.author ||
+      item.type !== published.registryType ||
+      serializeJson(item.files) !== serializeJson(published.sourceFiles) ||
+      serializeJson(item.dependencies) !== serializeJson(published.dependencies) ||
+      serializeJson(item.devDependencies) !== serializeJson(published.devDependencies) ||
+      serializeJson(item.registryDependencies) !== serializeJson(published.registryDependencies) ||
+      serializeJson(item.meta.cvUi.traits) !== serializeJson(published.traits) ||
+      serializeJson(item.meta.cvUi.supportedCvDataVersions) !==
+        serializeJson(published.supportedCvDataMajors) ||
+      `/r/${item.name}.json` !== published.registryPath ||
+      item.meta.cvUi.schemaVersion !== published.metaSchemaVersion ||
+      item.meta.cvUi.license !== published.license ||
+      item.meta.cvUi.preview.pdf !== published.previewPdf ||
+      serializeJson(item.meta.cvUi.preview.pages.map(({ src }) => src)) !==
+        serializeJson(published.previewPages) ||
+      serializeJson(item.files.map(({ target }) => target)) !==
+        serializeJson(published.installedPaths)
+    )
+      throw new Error(`Published Template contract changed: ${published.id}`)
+    const component = item.files.find(({ type }) => type === 'registry:component')
+    const source = component ? readFileSync(join(repositoryRoot, component.path), 'utf8') : ''
+    if (
+      !published.exportSignature.includes(published.export) ||
+      !published.exportSignature.includes(`{ ${published.prop} }`) ||
+      !source.includes(published.exportSignature)
+    )
+      throw new Error(`Published Template export or prop changed: ${published.id}`)
+  }
 }
 
 const registryItemDocument = (item: RegistryItem): Record<string, unknown> => ({
@@ -292,7 +448,9 @@ const catalogDocument = (registry: Registry): CvTemplateCatalogDocumentV1 => ({
 
 const buildInto = (root: string): void => {
   const registry = readRegistry()
-  validateRegistry(registry)
+  const compatibility = readCompatibilityFixture()
+  validateCompatibilityPaths(compatibility)
+  validateRegistry(registry, compatibility)
 
   const schemas = {
     'cv-data/v1.json': CV_DATA_V1_SCHEMA,
@@ -311,10 +469,14 @@ const buildInto = (root: string): void => {
   }
   for (const item of registry.items)
     write(root, `r/${item.name}.json`, serializeJson(registryItemDocument(item)))
+  for (const removal of validateRegistryLifecycle(registry, compatibility))
+    write(root, `r/${removal.templateId}.json`, serializeJson(removal))
 
-  for (const resources of Object.values(templateResources))
+  for (const item of registry.items) {
+    const resources = getTemplateResources(item.name) ?? []
     for (const resource of resources)
       write(root, resource.outputPath, readFileSync(join(repositoryRoot, resource.sourcePath)))
+  }
 
   const catalog = serializeJson(catalogDocument(registry))
   write(root, 'catalog/templates.json', catalog)

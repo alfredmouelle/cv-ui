@@ -1,0 +1,148 @@
+{
+  "schemaVersion": "1.0",
+  "cvDataMajors": [
+    {
+      "major": "1",
+      "schemaPath": "schemas/cv-data/v1.json",
+      "fixturePaths": [
+        "fixtures/cv/minimum.json",
+        "fixtures/cv/en.json",
+        "fixtures/cv/fr.json",
+        "fixtures/cv/maximum-envelope.json",
+        "fixtures/cv/wrapping.json"
+      ]
+    }
+  ],
+  "cvDataMigrations": [],
+  "catalogMajors": [
+    {
+      "major": "1",
+      "path": "public/catalog/v1/templates.json"
+    }
+  ],
+  "registrySchemaMajors": [
+    {
+      "major": "1",
+      "paths": ["public/r/clearline.json", "public/r/signal-ledger.json"]
+    }
+  ],
+  "templateIds": [
+    {
+      "id": "clearline",
+      "title": "Clearline",
+      "description": "A one-column ATS-oriented CV with restrained blue rules and one linear reading order.",
+      "author": "Alfred Mouelle",
+      "registryType": "registry:block",
+      "export": "ClearlineCv",
+      "prop": "data",
+      "exportSignature": "export function ClearlineCv({ data }: { readonly data: CvData })",
+      "traits": {
+        "layout": "single-column",
+        "atsIntent": "ats-oriented",
+        "visualTone": "classic",
+        "density": "balanced",
+        "photoSupport": "not-supported"
+      },
+      "installedPaths": [
+        "@components/cv/clearline/clearline.tsx",
+        "@components/cv/clearline/clearline.css",
+        "@lib/cv/examples/clearline.ts",
+        "~/public/cv-ui/clearline/licenses/OFL-1.1.txt"
+      ],
+      "sourceFiles": [
+        {
+          "path": "registry/clearline/clearline.tsx",
+          "type": "registry:component",
+          "target": "@components/cv/clearline/clearline.tsx"
+        },
+        {
+          "path": "registry/clearline/clearline.css",
+          "type": "registry:style",
+          "target": "@components/cv/clearline/clearline.css"
+        },
+        {
+          "path": "registry/clearline/example.ts",
+          "type": "registry:lib",
+          "target": "@lib/cv/examples/clearline.ts"
+        },
+        {
+          "path": "registry/clearline/licenses/OFL-1.1.txt",
+          "type": "registry:file",
+          "target": "~/public/cv-ui/clearline/licenses/OFL-1.1.txt"
+        }
+      ],
+      "dependencies": [],
+      "devDependencies": [],
+      "registryDependencies": ["https://cv-ui.alfredmouelle.com/r/cv-data.json"],
+      "supportedCvDataMajors": ["1"],
+      "metaSchemaVersion": "1.0",
+      "license": "MIT",
+      "previewPdf": "/previews/clearline/reference.pdf",
+      "previewPages": ["/previews/clearline/pages/001.png", "/previews/clearline/pages/002.png"],
+      "registryPath": "/r/clearline.json"
+    },
+    {
+      "id": "signal-ledger",
+      "title": "Signal Ledger",
+      "description": "A visual two-column CV with paired rows and a bold ledger-inspired header.",
+      "author": "Alfred Mouelle",
+      "registryType": "registry:block",
+      "export": "SignalLedgerCv",
+      "prop": "data",
+      "exportSignature": "export function SignalLedgerCv({ data }: { readonly data: CvData })",
+      "traits": {
+        "layout": "two-column",
+        "atsIntent": "visual-first",
+        "visualTone": "modern",
+        "density": "balanced",
+        "photoSupport": "not-supported"
+      },
+      "installedPaths": [
+        "@components/cv/signal-ledger/signal-ledger.tsx",
+        "@components/cv/signal-ledger/signal-ledger.css",
+        "@lib/cv/examples/signal-ledger.ts",
+        "~/public/cv-ui/signal-ledger/licenses/bricolage-grotesque-OFL-1.1.txt",
+        "~/public/cv-ui/signal-ledger/licenses/geist-OFL-1.1.txt"
+      ],
+      "sourceFiles": [
+        {
+          "path": "registry/signal-ledger/signal-ledger.tsx",
+          "type": "registry:component",
+          "target": "@components/cv/signal-ledger/signal-ledger.tsx"
+        },
+        {
+          "path": "registry/signal-ledger/signal-ledger.css",
+          "type": "registry:style",
+          "target": "@components/cv/signal-ledger/signal-ledger.css"
+        },
+        {
+          "path": "registry/signal-ledger/example.ts",
+          "type": "registry:lib",
+          "target": "@lib/cv/examples/signal-ledger.ts"
+        },
+        {
+          "path": "registry/signal-ledger/licenses/bricolage-grotesque-OFL-1.1.txt",
+          "type": "registry:file",
+          "target": "~/public/cv-ui/signal-ledger/licenses/bricolage-grotesque-OFL-1.1.txt"
+        },
+        {
+          "path": "registry/signal-ledger/licenses/geist-OFL-1.1.txt",
+          "type": "registry:file",
+          "target": "~/public/cv-ui/signal-ledger/licenses/geist-OFL-1.1.txt"
+        }
+      ],
+      "dependencies": [],
+      "devDependencies": [],
+      "registryDependencies": ["https://cv-ui.alfredmouelle.com/r/cv-data.json"],
+      "supportedCvDataMajors": ["1"],
+      "metaSchemaVersion": "1.0",
+      "license": "MIT",
+      "previewPdf": "/previews/signal-ledger/reference.pdf",
+      "previewPages": [
+        "/previews/signal-ledger/pages/001.png",
+        "/previews/signal-ledger/pages/002.png"
+      ],
+      "registryPath": "/r/signal-ledger.json"
+    }
+  ]
+}
